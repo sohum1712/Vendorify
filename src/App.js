@@ -6,7 +6,6 @@ import 'react-toastify/dist/ReactToastify.css';
 // Context
 import { AuthProvider } from './context/AuthContext';
 import { AppDataProvider } from './context/AppDataContext';
-import { useAuth } from './context/AuthContext';
 
 // Pages
 import LandingPage from './pages/LandingPage';
