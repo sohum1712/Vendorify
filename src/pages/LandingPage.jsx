@@ -2,6 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROLES } from '../constants/roles';
 import Hero from '../components/Hero';
+import Navbar from '../components/common/Navbar';
+import CategoriesCarousel from '../components/CategoriesCarousel';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -16,10 +18,14 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <Hero 
-        onContinueCustomer={() => handleContinue(ROLES.CUSTOMER)}
-        onContinueVendor={() => handleContinue(ROLES.VENDOR)}
-      />
+      <Navbar />
+      <div id="hero">
+        <Hero 
+          onContinueCustomer={() => handleContinue(ROLES.CUSTOMER)}
+          onContinueVendor={() => handleContinue(ROLES.VENDOR)}
+        />
+      </div>
+      <CategoriesCarousel />
     </div>
   );
 };
