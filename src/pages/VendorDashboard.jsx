@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Store, Package, Clock, TrendingUp, User, Star, Plus, Edit, MapPin, MessageCircle, Camera, ShieldCheck, ArrowUpRight, Utensils } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { LogOut, Store, Package, Clock, TrendingUp, User, Star, Plus, Edit, MapPin, MessageCircle, Camera, ShieldCheck, ArrowUpRight, Utensils, Settings, Bell, DollarSign } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAppData } from '../context/AppDataContext';
 import VendorVoiceAssistant from '../components/vendor/VendorVoiceAssistant';
 import AIProductListing from '../components/vendor/AIProductListing';
@@ -31,157 +31,179 @@ const VendorDashboard = () => {
   }, []);
 
   const stats = [
-    { id: 1, name: 'Today\'s Earnings', value: '₹1,240', change: '+12%', icon: TrendingUp, color: 'bg-green-50 text-green-600' },
-    { id: 2, name: 'Active Orders', value: orders.filter(o => o.status === 'NEW').length, change: '+2', icon: Package, color: 'bg-orange-50 text-orange-600' },
-    { id: 3, name: 'Total Revenue', value: `₹${totalEarnings}`, change: '+8%', icon: TrendingUp, color: 'bg-[#1A6950]/10 text-[#1A6950]' },
-    { id: 4, name: 'Rating', value: '4.6', change: '+0.2', icon: Star, color: 'bg-yellow-50 text-yellow-600' },
+    { id: 1, name: 'Today\'s Earnings', value: '₹1,240', change: '+12%', icon: DollarSign, color: 'bg-[#CDF546] text-gray-900', delay: 0 },
+    { id: 2, name: 'Active Orders', value: orders.filter(o => o.status === 'NEW').length, change: '+2', icon: Package, color: 'bg-[#1A6950] text-white', delay: 0.1 },
+    { id: 3, name: 'Total Revenue', value: `₹${totalEarnings}`, change: '+8%', icon: TrendingUp, color: 'bg-white text-[#1A6950]', delay: 0.2 },
+    { id: 4, name: 'Avg Rating', value: '4.8', change: '+0.2', icon: Star, color: 'bg-gray-900 text-white', delay: 0.3 },
   ];
 
   return (
-    <div className="min-h-screen bg-[#FDF9DC] pb-24">
+    <div className="min-h-screen bg-[#FDF9DC] pb-24 font-sans selection:bg-[#CDF546]">
       <Navbar role="vendor" />
 
       <div className="max-w-7xl mx-auto px-6 pt-32">
-        {/* Vendor Header Card */}
-        <div className="bg-white rounded-[48px] p-8 md:p-12 shadow-sm border border-gray-100 mb-12 flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex items-center gap-6">
-            <div className="w-24 h-24 bg-[#CDF546] rounded-[32px] flex items-center justify-center shadow-lg relative">
-              <Store size={40} className="text-gray-900" />
-              <div className={`absolute -bottom-2 -right-2 w-8 h-8 rounded-full border-4 border-white shadow-md ${isOnline ? 'bg-green-500' : 'bg-gray-300'}`} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h1 className="text-3xl font-heading font-black text-gray-900 uppercase tracking-tight">Raju's Pani Puri</h1>
-                <ShieldCheck className="text-[#1A6950]" size={24} />
+        {/* Modern Header Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
+          <div className="flex items-center gap-8">
+            <motion.div 
+              initial={{ scale: 0.8, rotate: -10 }}
+              animate={{ scale: 1, rotate: 0 }}
+              className="relative"
+            >
+              <div className="w-24 h-24 bg-[#1A6950] rounded-[32px] flex items-center justify-center shadow-2xl relative z-10">
+                <Store size={40} className="text-[#CDF546]" />
               </div>
-              <p className="text-gray-400 font-bold text-sm uppercase tracking-widest">Verified Vendor • MG Road, Bengaluru</p>
+              <div className="absolute inset-0 bg-[#CDF546] rounded-[32px] blur-2xl opacity-40 animate-pulse" />
+            </motion.div>
+            
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <h1 className="text-4xl md:text-5xl font-heading font-black text-gray-900 uppercase tracking-tighter">Raju's Pani Puri</h1>
+                <ShieldCheck className="text-[#1A6950]" size={28} />
+              </div>
+              <p className="text-gray-400 font-bold text-[12px] uppercase tracking-[0.3em] flex items-center gap-2">
+                <MapPin size={14} className="text-[#1A6950]" />
+                MG Road, Bengaluru • Verified Shop
+              </p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-4">
+
+          <div className="flex items-center gap-4 bg-white/50 backdrop-blur-md p-2 rounded-[28px] border border-white/50 shadow-sm">
             <button 
               onClick={() => setIsOnline(!isOnline)}
-              className={`px-8 py-4 rounded-2xl font-black uppercase tracking-widest transition-all shadow-sm active:scale-95 ${
-                isOnline ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+              className={`flex items-center gap-3 px-8 py-4 rounded-[24px] font-black uppercase tracking-widest transition-all ${
+                isOnline ? 'bg-white text-[#1A6950] shadow-md' : 'text-gray-400'
               }`}
             >
-              {isOnline ? 'Accepting Orders' : 'Offline'}
+              <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-[#1A6950]' : 'bg-gray-300'}`} />
+              {isOnline ? 'Accepting' : 'Paused'}
             </button>
-            <button 
-              onClick={logout}
-              className="p-4 bg-gray-50 text-gray-400 rounded-2xl hover:text-red-500 hover:bg-red-50 transition-all shadow-sm"
-            >
+            <button className="p-4 text-gray-400 hover:text-gray-900 transition-colors">
+              <Bell size={24} />
+            </button>
+            <button onClick={logout} className="p-4 text-gray-400 hover:text-red-500 transition-colors">
               <LogOut size={24} />
             </button>
           </div>
         </div>
 
-        {/* Stats Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {stats.map((stat, idx) => (
+        {/* Premium Stats Bento Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+          {stats.map((stat) => (
             <motion.div
               key={stat.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
-              className="bg-white rounded-[40px] p-8 shadow-sm border border-gray-100 group hover:shadow-xl transition-all duration-500"
+              transition={{ delay: stat.delay }}
+              className={`relative rounded-[48px] p-10 overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-700 group cursor-pointer border border-gray-100 ${stat.color}`}
             >
-              <div className={`w-14 h-14 ${stat.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                <stat.icon size={28} />
+              <div className="relative z-10">
+                <p className={`font-black text-[10px] uppercase tracking-[0.2em] mb-4 opacity-70`}>{stat.name}</p>
+                <h3 className="text-4xl font-heading font-black mb-6">{stat.value}</h3>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black px-3 py-1 rounded-full bg-black/10">
+                    {stat.change}
+                  </span>
+                  <stat.icon size={24} className="opacity-40 group-hover:opacity-100 transition-opacity group-hover:scale-110 duration-500" />
+                </div>
               </div>
-              <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.2em] mb-2">{stat.name}</p>
-              <div className="flex items-baseline justify-between">
-                <h3 className="text-3xl font-heading font-black text-gray-900">{stat.value}</h3>
-                <span className="text-[10px] font-black text-green-500 bg-green-50 px-2 py-1 rounded-lg">
-                  {stat.change}
-                </span>
-              </div>
+              {/* Decorative Circle */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-current opacity-5 rounded-full translate-x-12 -translate-y-12" />
             </motion.div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Menu Management */}
-          <div className="lg:col-span-2 space-y-8">
-            <div className="bg-white rounded-[48px] p-8 md:p-10 shadow-sm border border-gray-100">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-heading font-black text-gray-900 uppercase tracking-tight">Menu Items</h2>
-                <div className="flex gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Menu & Orders Section */}
+          <div className="lg:col-span-8 space-y-8">
+            <div className="bg-white rounded-[56px] p-10 md:p-14 border border-gray-100 shadow-sm relative overflow-hidden">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
+                <div>
+                  <h2 className="text-3xl font-heading font-black text-gray-900 uppercase tracking-tight">Shop Menu</h2>
+                  <p className="text-gray-400 font-bold text-[11px] uppercase tracking-widest mt-1">Manage items & availability</p>
+                </div>
+                <div className="flex gap-4 w-full md:w-auto">
                   <button
                     onClick={() => setShowAIListing(true)}
-                    className="flex items-center gap-2 bg-[#1A6950] text-white px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg hover:bg-[#145a44] transition-all"
+                    className="flex-1 md:flex-none flex items-center justify-center gap-3 bg-[#1A6950] text-white px-8 py-4 rounded-[24px] font-black text-xs uppercase tracking-widest shadow-xl shadow-[#1A6950]/20 hover:scale-105 transition-all"
                   >
-                    <Camera size={16} />
-                    AI Listing
+                    <Camera size={18} />
+                    AI Add
                   </button>
-                  <button className="flex items-center gap-2 bg-[#CDF546] text-gray-900 px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg hover:bg-[#b8dd3e] transition-all">
-                    <Plus size={16} />
-                    Add Manual
+                  <button className="flex-1 md:flex-none flex items-center justify-center gap-3 bg-[#CDF546] text-gray-900 px-8 py-4 rounded-[24px] font-black text-xs uppercase tracking-widest shadow-xl shadow-[#CDF546]/20 hover:scale-105 transition-all">
+                    <Plus size={18} />
+                    Manual
                   </button>
                 </div>
               </div>
               
-              <div className="space-y-4">
-                {menuItems.map((item) => (
-                  <div key={item.id} className="group flex items-center justify-between p-6 bg-gray-50 rounded-[32px] hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-gray-100">
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                        <Utensils className="text-[#1A6950]" size={24} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <AnimatePresence>
+                  {menuItems.map((item) => (
+                    <motion.div 
+                      layout
+                      key={item.id} 
+                      className="group flex items-center justify-between p-6 bg-gray-50 rounded-[32px] hover:bg-white hover:shadow-xl transition-all duration-500 border border-transparent hover:border-gray-100"
+                    >
+                      <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
+                          <Utensils className="text-[#1A6950]" size={28} />
+                        </div>
+                        <div>
+                          <p className="font-black text-gray-900 uppercase tracking-tight text-lg">{item.name}</p>
+                          <p className="text-[#1A6950] font-black text-xl">₹{item.price}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-black text-gray-900 uppercase tracking-tight text-lg">{item.name}</p>
-                        <p className="text-[#1A6950] font-black">₹{item.price}</p>
+                      <div className="flex flex-col items-end gap-3">
+                        <div className={`w-3 h-3 rounded-full ${item.available ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'bg-red-400'}`} />
+                        <button className="p-3 bg-white text-gray-300 rounded-xl hover:text-gray-900 hover:shadow-md transition-all">
+                          <Settings size={18} />
+                        </button>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        item.available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                      }`}>
-                        {item.available ? 'Available' : 'Sold Out'}
-                      </span>
-                      <button className="p-3 bg-white text-gray-400 rounded-xl hover:text-[#1A6950] hover:shadow-sm transition-all">
-                        <Edit size={18} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
             </div>
 
-            {/* Recent Orders Section */}
-            <div className="bg-white rounded-[48px] p-8 md:p-10 shadow-sm border border-gray-100">
-              <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-heading font-black text-gray-900 uppercase tracking-tight">Active Orders</h2>
+            {/* Orders Bento */}
+            <div className="bg-gray-900 rounded-[56px] p-10 md:p-14 text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-[#CDF546] rounded-full blur-[150px] opacity-10 translate-x-1/2 -translate-y-1/2" />
+              
+              <div className="flex justify-between items-center mb-12 relative z-10">
+                <h2 className="text-3xl font-heading font-black uppercase tracking-tight">Active Orders</h2>
                 <button 
                   onClick={() => navigate('/vendor/orders')}
-                  className="text-[12px] font-black text-[#1A6950] uppercase tracking-widest hover:underline flex items-center gap-1"
+                  className="bg-white/10 backdrop-blur-md text-white p-4 rounded-full hover:bg-[#CDF546] hover:text-gray-900 transition-all"
                 >
-                  View All <ArrowUpRight size={14} />
+                  <ArrowUpRight size={24} />
                 </button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                 {orders.map((order) => (
-                  <div key={order.id} className="bg-gray-50 rounded-[40px] p-8 border border-transparent hover:border-[#CDF546] transition-all group">
+                  <div key={order.id} className="bg-white/5 backdrop-blur-xl rounded-[40px] p-8 border border-white/10 hover:border-[#CDF546]/50 transition-all group">
                     <div className="flex justify-between items-start mb-6">
-                      <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-1">Customer</p>
-                        <h4 className="text-xl font-black text-gray-900 uppercase tracking-tight">{order.customerName || 'Customer'}</h4>
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">Customer</p>
+                        <h4 className="text-xl font-black uppercase tracking-tight group-hover:text-[#CDF546] transition-colors">{order.customerName || 'Guest'}</h4>
                       </div>
                       <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${
-                        order.status === 'NEW' ? 'bg-orange-100 text-orange-600' : 'bg-green-100 text-green-600'
+                        order.status === 'NEW' ? 'bg-[#CDF546] text-gray-900' : 'bg-white/10 text-white'
                       }`}>
                         {order.status}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 mb-6 line-clamp-2 font-medium">
-                      {order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}
-                    </p>
-                    <div className="flex items-center justify-between pt-6 border-t border-gray-100">
-                      <span className="text-2xl font-black text-gray-900">₹{order.total}</span>
-                      <button className="bg-white p-4 rounded-2xl text-[#1A6950] shadow-sm hover:bg-[#1A6950] hover:text-white transition-all">
-                        <MessageCircle size={20} />
-                      </button>
+                    <div className="flex items-center justify-between pt-6 border-t border-white/5">
+                      <span className="text-2xl font-black">₹{order.total}</span>
+                      <div className="flex gap-2">
+                        <button className="bg-white/10 p-4 rounded-2xl hover:bg-white hover:text-gray-900 transition-all">
+                          <MessageCircle size={20} />
+                        </button>
+                        <button className="bg-[#CDF546] text-gray-900 p-4 rounded-2xl shadow-lg hover:scale-110 transition-transform">
+                          <Package size={20} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -189,62 +211,62 @@ const VendorDashboard = () => {
             </div>
           </div>
 
-          {/* Quick Actions & AI Panel */}
-          <div className="space-y-8">
-            <div className="bg-[#1A6950] rounded-[48px] p-10 text-white shadow-xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -translate-y-16 translate-x-16 group-hover:bg-[#CDF546]/20 transition-all duration-700" />
+          {/* Side Panel: AI & Voice */}
+          <div className="lg:col-span-4 space-y-8">
+            <motion.div 
+              whileHover={{ y: -5 }}
+              className="bg-[#1A6950] rounded-[56px] p-12 text-white shadow-2xl relative overflow-hidden cursor-pointer"
+            >
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
               <div className="relative z-10">
-                <h3 className="text-2xl font-heading font-black uppercase mb-4 leading-tight">
-                  Voice <br /> Assistant
+                <div className="w-20 h-20 bg-[#CDF546] rounded-[28px] flex items-center justify-center mb-8 shadow-xl rotate-12 group-hover:rotate-0 transition-transform">
+                  <MessageCircle size={36} className="text-gray-900" />
+                </div>
+                <h3 className="text-3xl font-heading font-black uppercase mb-4 leading-none">
+                  Voice <br /> Control
                 </h3>
-                <p className="text-white/60 text-sm font-medium mb-8 leading-relaxed">
-                  Manage your shop using just your voice. Say "Add Samosa" or "Check Earnings".
+                <p className="text-white/60 text-sm font-medium mb-10 leading-relaxed">
+                  Say "Turn off orders" or "What's my total?" to interact with Vendorify AI.
                 </p>
-                <div className="flex justify-center">
-                  <div className="w-20 h-20 bg-[#CDF546] rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(205,245,70,0.4)] animate-pulse">
-                    <div className="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center">
-                      <div className="w-4 h-4 bg-white rounded-full" />
-                    </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
+                    <motion.div 
+                      animate={{ x: ['-100%', '100%'] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                      className="w-1/2 h-full bg-[#CDF546]"
+                    />
                   </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#CDF546]">Listening</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="bg-white rounded-[48px] p-8 shadow-sm border border-gray-100">
-              <h3 className="text-xl font-heading font-black text-gray-900 uppercase mb-6">Quick Settings</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
-                  <div className="flex items-center gap-3">
-                    <Star className="text-yellow-500" size={20} />
-                    <span className="text-sm font-black uppercase tracking-tight text-gray-900">Auto-Accept</span>
+            <div className="bg-white rounded-[56px] p-12 shadow-sm border border-gray-100">
+              <h3 className="text-xl font-heading font-black text-gray-900 uppercase mb-8 tracking-tight">Daily Progress</h3>
+              <div className="space-y-8">
+                <div className="space-y-3">
+                  <div className="flex justify-between text-[11px] font-black uppercase tracking-widest text-gray-400">
+                    <span>Goal Reached</span>
+                    <span className="text-[#1A6950]">85%</span>
                   </div>
-                  <div className="w-12 h-6 bg-[#CDF546] rounded-full p-1 cursor-pointer">
-                    <div className="w-4 h-4 bg-white rounded-full shadow-sm translate-x-6" />
+                  <div className="h-4 bg-gray-50 rounded-full overflow-hidden p-1">
+                    <div className="h-full bg-[#1A6950] rounded-full w-[85%]" />
                   </div>
+                </div>
+                
+                <div className="flex items-center justify-between p-6 bg-gray-50 rounded-[32px] group hover:bg-[#CDF546] transition-all duration-500 cursor-pointer">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
+                      <Star className="text-yellow-500" size={20} />
+                    </div>
+                    <span className="font-black uppercase tracking-tight text-gray-900 text-sm">Rating Goal</span>
+                  </div>
+                  <ArrowUpRight size={20} className="text-gray-300 group-hover:text-gray-900" />
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Mobile Bottom Nav */}
-      <div className="md:hidden fixed bottom-6 left-6 right-6 h-20 bg-gray-900 rounded-[32px] flex items-center justify-around px-8 shadow-2xl z-50">
-        <button className="p-3 rounded-2xl bg-[#CDF546] text-gray-900">
-          <Store size={24} />
-        </button>
-        <button onClick={() => navigate('/vendor/orders')} className="p-3 rounded-2xl text-white">
-          <Package size={24} />
-        </button>
-        <div className="w-16 h-16 bg-[#1A6950] rounded-full -mt-12 flex items-center justify-center text-[#CDF546] shadow-xl border-4 border-[#FDF9DC]">
-          <Plus size={28} />
-        </div>
-        <button className="p-3 rounded-2xl text-white">
-          <TrendingUp size={24} />
-        </button>
-        <button onClick={() => navigate('/vendor/profile')} className="p-3 rounded-2xl text-white">
-          <User size={24} />
-        </button>
       </div>
 
       <VendorVoiceAssistant />
