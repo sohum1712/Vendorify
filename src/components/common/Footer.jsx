@@ -25,10 +25,10 @@ export function Footer() {
 
         {/* Footer Grid */}
         <div className="grid gap-12 md:grid-cols-4 mb-20">
-          <div className="md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-8">
-              <span className="text-4xl font-heading font-black text-[#CDF546] tracking-tight uppercase italic">Vendorify</span>
-            </Link>
+            <div className="md:col-span-1">
+              <Link to="/" className="flex items-center gap-2 mb-8">
+                <span className="text-4xl font-heading font-black text-[#CDF546] tracking-tight uppercase italic">Vendorify</span>
+              </Link>
             <p className="text-teal-100 font-sans font-medium leading-relaxed mb-8 opacity-70">
               The world's most trusted vendor verification and compliance monitoring platform.
             </p>

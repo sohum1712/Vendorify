@@ -14,6 +14,7 @@ import VendorLogin from './pages/vendor/VendorLogin';
 import CustomerDashboard from './pages/CustomerDashboard';
 import VendorDashboard from './pages/VendorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import InfoPage from './pages/InfoPage';
 
 // Customer Flow Pages
 import CustomerLayout from './pages/customer/CustomerLayout';
@@ -51,9 +52,20 @@ function App() {
             
             {/* Login Routes */}
             <Route path="/login/customer" element={<CustomerLogin />} />
-            <Route path="/login/vendor" element={<VendorLogin />} />
-            
-            <Route element={
+              <Route path="/login/vendor" element={<VendorLogin />} />
+              
+              {/* Info Routes */}
+              <Route path="/about" element={<InfoPage />} />
+              <Route path="/security" element={<InfoPage />} />
+              <Route path="/integrations" element={<InfoPage />} />
+              <Route path="/careers" element={<InfoPage />} />
+              <Route path="/blog" element={<InfoPage />} />
+              <Route path="/docs" element={<InfoPage />} />
+              <Route path="/help" element={<InfoPage />} />
+              <Route path="/terms" element={<InfoPage />} />
+              <Route path="/privacy" element={<InfoPage />} />
+              
+              <Route element={
               <ProtectedRoute allowedRoles={[ROLES.CUSTOMER]} />
             }>
               <Route path="/customer" element={<CustomerLayout />}>
