@@ -250,9 +250,9 @@ const CustomerDashboard = () => {
           <Home size={20} className={activeTab === 'home' ? 'fill-indigo-100' : ''} />
           <span className="text-[10px] font-medium">Home</span>
         </button>
-        <button onClick={() => navigate('/customer/map')} className="flex flex-col items-center text-gray-400">
-          <MapPin size={20} />
-          <span className="text-[10px] font-medium">Map</span>
+        <button onClick={() => navigate('/customer/profile')} className="flex flex-col items-center text-gray-400">
+          <User size={20} />
+          <span className="text-[10px] font-medium">Profile</span>
         </button>
         <button className="w-12 h-12 bg-indigo-600 rounded-full -mt-6 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
           <Search size={24} />

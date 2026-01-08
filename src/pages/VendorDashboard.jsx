@@ -1,21 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Store, Package, Clock, TrendingUp, User, Star, Plus, Edit, MapPin, MessageCircle } from 'lucide-react';
+import { LogOut, Store, Package, Clock, TrendingUp, User, Star, Plus, Edit, MapPin, MessageCircle, Camera } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { useAppData } from '../context/AppDataContext';
+import VendorVoiceAssistant from '../components/vendor/VendorVoiceAssistant';
+import AIProductListing from '../components/vendor/AIProductListing';
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { getOrdersForVendor, getVendorById } = useAppData();
   const [isOnline, setIsOnline] = useState(true);
+  const [showAIListing, setShowAIListing] = useState(false);
+  const [menuItems, setMenuItems] = useState([
+    { id: 1, name: 'Pani Puri (6pcs)', price: 30, available: true },
+    { id: 2, name: 'Dahi Puri', price: 50, available: true },
+    { id: 3, name: 'Masala Puri', price: 40, available: false },
+  ]);
 
   const vendorId = 1; // Static for demo; in real app, get from auth
   const vendor = getVendorById(vendorId);
   const orders = getOrdersForVendor(vendorId);
   const completedOrders = orders.filter(o => o.status === 'COMPLETED');
   const totalEarnings = completedOrders.reduce((sum, o) => sum + o.total, 0);
+
+  const handleAddProduct = useCallback((newProduct) => {
+    setMenuItems(prev => [...prev, newProduct]);
+  }, []);
 
   const handleShareOnWhatsApp = (order) => {
     const customerName = order.customerName || 'Customer';
@@ -42,12 +54,12 @@ const VendorDashboard = () => {
     { id: 4, name: 'Rating', value: '4.6', change: '+0.2', changeType: 'positive', icon: Star },
   ];
 
-  // Mock menu items for product management
-  const menuItems = [
-    { id: 1, name: 'Pani Puri (6pcs)', price: 30, available: true },
-    { id: 2, name: 'Dahi Puri', price: 50, available: true },
-    { id: 3, name: 'Masala Puri', price: 40, available: false },
-  ];
+  // Mock menu items for product management - using state now
+  // const menuItems = [
+  //   { id: 1, name: 'Pani Puri (6pcs)', price: 30, available: true },
+  //   { id: 2, name: 'Dahi Puri', price: 50, available: true },
+  //   { id: 3, name: 'Masala Puri', price: 40, available: false },
+  // ];
 
   return (
     <div className="min-h-screen bg-gray-50 max-w-mobile mx-auto md:max-w-tablet lg:max-w-desktop shadow-2xl overflow-hidden relative">
@@ -124,10 +136,19 @@ const VendorDashboard = () => {
         <Card>
           <div className="flex justify-between items-center mb-3">
             <h3 className="font-bold text-gray-800">Product Management</h3>
-            <button className="text-xs text-indigo-600 font-medium flex items-center gap-1">
-              <Plus size={14} />
-              Add Item
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowAIListing(true)}
+                className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-indigo-700"
+              >
+                <Camera size={14} />
+                AI Add
+              </button>
+              <button className="text-xs text-indigo-600 font-medium flex items-center gap-1">
+                <Plus size={14} />
+                Manual Add
+              </button>
+            </div>
           </div>
           <div className="space-y-2">
             {menuItems.map((item) => (
@@ -253,11 +274,21 @@ const VendorDashboard = () => {
           <Clock size={20} />
           <span className="text-[10px] font-medium">History</span>
         </button>
-        <button className="flex flex-col items-center text-gray-400">
+        <button onClick={() => navigate('/vendor/profile')} className="flex flex-col items-center text-gray-400">
           <User size={20} />
           <span className="text-[10px] font-medium">Profile</span>
         </button>
       </div>
+      {/* Voice Assistant */}
+      <VendorVoiceAssistant />
+      
+      {/* AI Product Listing Modal */}
+      {showAIListing && (
+        <AIProductListing
+          onClose={() => setShowAIListing(false)}
+          onProductAdded={handleAddProduct}
+        />
+      )}
     </div>
   );
 };

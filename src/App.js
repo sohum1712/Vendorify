@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 // Context
 import { AuthProvider } from './context/AuthContext';
 import { AppDataProvider } from './context/AppDataContext';
+import { useAuth } from './context/AuthContext';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -21,17 +22,19 @@ import VendorDetails from './pages/customer/VendorDetails';
 import CartPage from './pages/customer/CartPage';
 import CustomerOrders from './pages/customer/CustomerOrders';
 import MapPage from './pages/customer/MapPage';
+import CustomerProfile from './pages/customer/CustomerProfile';
 
 // Vendor Flow Pages
 import VendorLayout from './pages/vendor/VendorLayout';
 import VendorOrders from './pages/vendor/VendorOrders';
+import VendorProfile from './pages/vendor/VendorProfile';
 
 // Admin Flow Pages
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminVendors from './pages/admin/AdminVendors';
 
 // Chat
-import ChatbotWidget from './components/chat/ChatbotWidget';
+import ConditionalChatbot from './components/chat/ConditionalChatbot';
 
 // Components
 import ProtectedRoute from './components/common/ProtectedRoute.jsx';
@@ -60,6 +63,7 @@ function App() {
                 <Route path="cart" element={<CartPage />} />
                 <Route path="orders" element={<CustomerOrders />} />
                 <Route path="map" element={<MapPage />} />
+                <Route path="profile" element={<CustomerProfile />} />
               </Route>
             </Route>
 
@@ -69,6 +73,7 @@ function App() {
               <Route path="/vendor" element={<VendorLayout />}>
                 <Route index element={<VendorDashboard />} />
                 <Route path="orders" element={<VendorOrders />} />
+                <Route path="profile" element={<VendorProfile />} />
               </Route>
             </Route>
 
@@ -96,7 +101,7 @@ function App() {
             pauseOnHover
           />
 
-          <ChatbotWidget />
+          <ConditionalChatbot />
         </div>
       </AppDataProvider>
     </AuthProvider>
