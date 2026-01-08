@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, ChevronDown, ArrowRight } from "lucide-react";
 
-export default function Navbar() {
+export default function Navbar({ role = "landing" }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isHero, setIsHero] = useState(true);
   const [isHidden, setIsHidden] = useState(false);
@@ -11,9 +11,9 @@ export default function Navbar() {
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
-      const heroHeight = window.innerHeight - 100;
+      const threshold = 100;
 
-      if (scrollY > heroHeight) {
+      if (scrollY > threshold) {
         setIsHero(false);
         setIsHidden(true);
       } else {
@@ -30,9 +30,35 @@ export default function Navbar() {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
+    } else if (role !== 'landing') {
+      navigate('/');
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
     }
     setIsOpen(false);
   };
+
+  const navLinks = {
+    landing: [
+      { name: 'Products', action: () => scrollToSection('categories') },
+      { name: 'Customers', to: '/login/customer' },
+      { name: 'Careers', to: '/login/vendor' },
+    ],
+    customer: [
+      { name: 'Home', to: '/customer/dashboard' },
+      { name: 'Orders', to: '/customer/orders' },
+      { name: 'Profile', to: '/customer/profile' },
+    ],
+    vendor: [
+      { name: 'Dashboard', to: '/vendor/dashboard' },
+      { name: 'Orders', to: '/vendor/orders' },
+      { name: 'Inventory', to: '/vendor/dashboard' },
+    ]
+  };
+
+  const currentLinks = navLinks[role] || navLinks.landing;
 
   return (
     <nav className={`fixed top-2 z-50 w-full flex justify-center px-4 md:px-0 transition-transform duration-500 ${!isHero && isHidden ? '-translate-y-[150%] hover:translate-y-0' : 'translate-y-0'}`}>
@@ -40,29 +66,25 @@ export default function Navbar() {
 
         {/* Left Side Links */}
         <div className="hidden md:flex items-center gap-8 lg:gap-12 flex-1">
-          <div className="relative group">
-            <button 
-              onClick={() => scrollToSection('categories')}
-              className="flex items-center gap-1.5 text-gray-800 hover:text-[#1A6950] transition-colors font-bold text-[14px] font-sans uppercase tracking-widest"
-            >
-              Products
-              <ChevronDown className="h-4 w-4 text-gray-400" />
-            </button>
-            <div className="absolute left-0 top-full hidden group-hover:block bg-white border border-gray-100 rounded-2xl shadow-xl py-4 w-64 mt-2 animate-in fade-in slide-in-from-top-2">
-              <button onClick={() => scrollToSection('categories')} className="w-full text-left block px-6 py-3 hover:bg-[#FDF9DC] text-gray-800 text-[12px] font-bold uppercase tracking-widest transition-colors">
-                Vegetables
+          {currentLinks.map((link, idx) => (
+            link.action ? (
+              <button 
+                key={idx}
+                onClick={link.action}
+                className="text-gray-800 hover:text-[#1A6950] transition-colors font-bold text-[14px] font-sans uppercase tracking-widest"
+              >
+                {link.name}
               </button>
-              <button onClick={() => scrollToSection('categories')} className="w-full text-left block px-6 py-3 hover:bg-[#FDF9DC] text-gray-800 text-[12px] font-bold uppercase tracking-widest transition-colors">
-                Fruits
-              </button>
-            </div>
-          </div>
-          <Link to="/login/customer" className="text-gray-800 hover:text-[#1A6950] transition-colors font-bold text-[14px] font-sans uppercase tracking-widest">
-            Customers
-          </Link>
-          <Link to="/login/vendor" className="text-gray-800 hover:text-[#1A6950] transition-colors font-bold text-[14px] font-sans uppercase tracking-widest">
-            Careers
-          </Link>
+            ) : (
+              <Link 
+                key={idx}
+                to={link.to} 
+                className="text-gray-800 hover:text-[#1A6950] transition-colors font-bold text-[14px] font-sans uppercase tracking-widest"
+              >
+                {link.name}
+              </Link>
+            )
+          ))}
         </div>
 
         {/* Logo - Center */}
@@ -77,16 +99,28 @@ export default function Navbar() {
 
         {/* Right Side Actions */}
         <div className="hidden md:flex items-center gap-8 flex-1 justify-end">
-          <Link to="/login/customer" className="text-gray-800 hover:text-[#1A6950] transition-colors font-bold text-[14px] font-sans uppercase tracking-widest">
-            Sign in
-          </Link>
-          <button 
-            onClick={() => scrollToSection('hero')}
-            className="bg-[#CDF546] hover:bg-[#b8dd3e] text-gray-900 px-8 py-3 rounded-full font-bold transition-all text-[14px] flex items-center justify-center gap-2 font-sans uppercase tracking-widest shadow-sm"
-          >
-            See a demo
-            <ArrowRight className="h-4 w-4" />
-          </button>
+          {role === 'landing' ? (
+            <>
+              <Link to="/login/customer" className="text-gray-800 hover:text-[#1A6950] transition-colors font-bold text-[14px] font-sans uppercase tracking-widest">
+                Sign in
+              </Link>
+              <button 
+                onClick={() => scrollToSection('hero')}
+                className="bg-[#CDF546] hover:bg-[#b8dd3e] text-gray-900 px-8 py-3 rounded-full font-bold transition-all text-[14px] flex items-center justify-center gap-2 font-sans uppercase tracking-widest shadow-sm"
+              >
+                See a demo
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </>
+          ) : (
+            <button 
+              onClick={() => navigate('/login/customer')}
+              className="bg-[#1A6950] hover:bg-[#145a44] text-white px-8 py-3 rounded-full font-bold transition-all text-[14px] flex items-center justify-center gap-2 font-sans uppercase tracking-widest shadow-sm"
+            >
+              Sign Out
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -98,18 +132,40 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="absolute top-[calc(100%+8px)] left-4 right-4 bg-white rounded-[32px] shadow-2xl p-8 border border-gray-100 md:hidden flex flex-col gap-6 animate-in fade-in slide-in-from-top-4">
-          <button onClick={() => scrollToSection('categories')} className="text-left text-gray-800 font-bold text-lg uppercase tracking-widest py-2">Products</button>
-          <Link to="/login/customer" className="text-gray-800 font-bold text-lg uppercase tracking-widest py-2">Customers</Link>
-          <Link to="/login/vendor" className="text-gray-800 font-bold text-lg uppercase tracking-widest py-2">Careers</Link>
+          {currentLinks.map((link, idx) => (
+            link.action ? (
+              <button 
+                key={idx}
+                onClick={link.action}
+                className="text-left text-gray-800 font-bold text-lg uppercase tracking-widest py-2"
+              >
+                {link.name}
+              </button>
+            ) : (
+              <Link 
+                key={idx}
+                to={link.to} 
+                className="text-gray-800 font-bold text-lg uppercase tracking-widest py-2"
+              >
+                {link.name}
+              </Link>
+            )
+          ))}
           <hr className="border-gray-100" />
-          <Link to="/login/customer" className="text-gray-800 font-bold text-lg uppercase tracking-widest py-2">Sign in</Link>
-          <button 
-            onClick={() => scrollToSection('hero')}
-            className="bg-[#CDF546] text-gray-900 px-6 py-5 rounded-2xl font-bold flex items-center justify-center gap-2 uppercase tracking-widest"
-          >
-            See a demo
-            <ArrowRight className="h-5 w-5" />
-          </button>
+          {role === 'landing' ? (
+            <Link to="/login/customer" className="bg-[#CDF546] text-gray-900 px-6 py-5 rounded-2xl font-bold flex items-center justify-center gap-2 uppercase tracking-widest">
+              See a demo
+              <ArrowRight className="h-5 w-5" />
+            </Link>
+          ) : (
+            <button 
+              onClick={() => navigate('/login/customer')}
+              className="bg-[#1A6950] text-white px-6 py-5 rounded-2xl font-bold flex items-center justify-center gap-2 uppercase tracking-widest"
+            >
+              Sign Out
+              <ArrowRight className="h-5 w-5" />
+            </button>
+          )}
         </div>
       )}
     </nav>
