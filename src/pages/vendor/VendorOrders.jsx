@@ -1,19 +1,11 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, Clock, Package, MessageCircle, ArrowUpRight, ShoppingBag } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useAppData } from '../../context/AppDataContext';
-import { Card, CardContent } from '../../components/common/Card';
-import Button from '../../components/common/Button';
-
-const statusBadgeClass = (status) => {
-  const base = 'text-xs px-2 py-1 rounded-full';
-  if (status === 'NEW') return `${base} bg-blue-100 text-blue-700`;
-  if (status === 'ACCEPTED') return `${base} bg-orange-100 text-orange-700`;
-  if (status === 'COMPLETED') return `${base} bg-green-100 text-green-700`;
-  if (status === 'REJECTED') return `${base} bg-red-100 text-red-700`;
-  return `${base} bg-gray-100 text-gray-700`;
-};
+import Navbar from '../../components/common/Navbar';
+import { Footer } from '../../components/common/Footer';
 
 const VendorOrders = () => {
   const navigate = useNavigate();
@@ -27,92 +19,127 @@ const VendorOrders = () => {
 
   const orders = getOrdersForVendor(vendorId);
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'NEW': return 'bg-[#CDF546] text-gray-900 shadow-[0_0_20px_rgba(205,245,70,0.3)]';
+      case 'ACCEPTED': return 'bg-[#1A6950] text-white';
+      case 'COMPLETED': return 'bg-gray-100 text-gray-400';
+      case 'REJECTED': return 'bg-red-50 text-red-400';
+      default: return 'bg-gray-100 text-gray-400';
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 max-w-mobile mx-auto md:max-w-tablet lg:max-w-desktop pb-20">
-      <div className="bg-white p-4 sticky top-0 z-20 shadow-sm flex items-center justify-between">
-        <button onClick={() => navigate('/vendor')} className="flex items-center text-sm text-gray-700">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </button>
-        <div className="font-bold text-gray-900">Orders</div>
-        <div className="w-10" />
-      </div>
+    <div className="min-h-screen bg-[#FDF9DC] font-sans selection:bg-[#CDF546]">
+      <Navbar role="vendor" />
+      
+      <div className="max-w-7xl mx-auto px-6 pt-32 pb-20">
+        <div className="flex items-center gap-6 mb-12">
+          <button 
+            onClick={() => navigate('/vendor')}
+            className="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:shadow-xl transition-all"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1 className="text-4xl font-heading font-black text-gray-900 uppercase tracking-tight">Order Management</h1>
+            <p className="text-gray-400 font-bold text-[11px] uppercase tracking-[0.3em] mt-1">Track and process your sales</p>
+          </div>
+        </div>
 
-      <div className="p-4 space-y-3">
         {!orders.length ? (
-          <div className="text-sm text-gray-600">No orders yet.</div>
+          <div className="bg-white rounded-[48px] p-20 text-center border border-gray-100 shadow-sm">
+            <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8">
+              <ShoppingBag className="text-gray-200" size={40} />
+            </div>
+            <h3 className="text-2xl font-heading font-black text-gray-900 uppercase">No orders yet</h3>
+            <p className="text-gray-400 font-medium mt-2">When customers place orders, they'll appear here.</p>
+          </div>
         ) : (
-          orders.map((o) => (
-            <Card key={o.id} hoverEffect>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="font-semibold text-gray-900">{o.customerName}</div>
-                    <div className="text-xs text-gray-500">{new Date(o.createdAt).toLocaleString()}</div>
-                  </div>
-                  <span className={statusBadgeClass(o.status)}>{o.status}</span>
-                </div>
-
-                <div className="mt-2 text-sm text-gray-700">
-                  {o.items.map((it) => (
-                    <div key={it.id} className="flex justify-between">
-                      <span>{it.name} × {it.qty}</span>
-                      <span>₹{it.price * it.qty}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <AnimatePresence>
+              {orders.map((o, idx) => (
+                <motion.div 
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  key={o.id}
+                  className="bg-white rounded-[40px] p-8 border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-500 group relative overflow-hidden"
+                >
+                  <div className="flex justify-between items-start mb-8">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Customer Name</p>
+                      <h4 className="text-2xl font-black uppercase tracking-tight text-gray-900 group-hover:text-[#1A6950] transition-colors">
+                        {o.customerName}
+                      </h4>
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-gray-300 uppercase tracking-widest pt-1">
+                        <Clock size={12} />
+                        {new Date(o.createdAt).toLocaleString()}
+                      </div>
                     </div>
-                  ))}
-                </div>
+                    <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${getStatusColor(o.status)}`}>
+                      {o.status}
+                    </span>
+                  </div>
 
-                <div className="mt-2 pt-2 border-t border-gray-100 flex justify-between text-sm">
-                  <span className="text-gray-600">Total</span>
-                  <span className="font-bold text-gray-900">₹{o.total}</span>
-                </div>
+                  <div className="space-y-3 mb-8">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">Order Summary</p>
+                    {o.items.map((it) => (
+                      <div key={it.id} className="flex justify-between items-center bg-gray-50 p-4 rounded-2xl group-hover:bg-white transition-colors">
+                        <span className="font-black text-gray-900 uppercase tracking-tight text-xs">{it.name} <span className="text-[#1A6950]">× {it.qty}</span></span>
+                        <span className="font-bold text-gray-900">₹{it.price * it.qty}</span>
+                      </div>
+                    ))}
+                  </div>
 
-                <div className="mt-3 flex gap-2">
-                  {o.status === 'NEW' && (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => updateOrderStatus({ orderId: o.id, status: 'ACCEPTED' })}
-                      >
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Accept
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updateOrderStatus({ orderId: o.id, status: 'REJECTED' })}
-                      >
-                        <XCircle className="mr-2 h-4 w-4" />
-                        Reject
-                      </Button>
-                    </>
-                  )}
+                  <div className="flex items-center justify-between pt-8 border-t border-gray-50">
+                    <div>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-1">Total Amount</p>
+                      <span className="text-3xl font-black text-gray-900">₹{o.total}</span>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      {o.status === 'NEW' && (
+                        <>
+                          <button
+                            onClick={() => updateOrderStatus({ orderId: o.id, status: 'ACCEPTED' })}
+                            className="bg-[#1A6950] text-white px-8 py-4 rounded-[20px] font-black text-xs uppercase tracking-widest shadow-lg shadow-[#1A6950]/20 hover:scale-105 transition-all flex items-center gap-2"
+                          >
+                            <CheckCircle2 size={16} />
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => updateOrderStatus({ orderId: o.id, status: 'REJECTED' })}
+                            className="bg-red-50 text-red-400 p-4 rounded-[20px] hover:bg-red-500 hover:text-white transition-all"
+                          >
+                            <XCircle size={20} />
+                          </button>
+                        </>
+                      )}
 
-                  {o.status === 'ACCEPTED' && (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => updateOrderStatus({ orderId: o.id, status: 'COMPLETED' })}
-                      >
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Complete
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updateOrderStatus({ orderId: o.id, status: 'REJECTED' })}
-                      >
-                        <XCircle className="mr-2 h-4 w-4" />
-                        Reject
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                      {o.status === 'ACCEPTED' && (
+                        <button
+                          onClick={() => updateOrderStatus({ orderId: o.id, status: 'COMPLETED' })}
+                          className="bg-[#CDF546] text-gray-900 px-8 py-4 rounded-[20px] font-black text-xs uppercase tracking-widest shadow-lg shadow-[#CDF546]/20 hover:scale-105 transition-all flex items-center gap-2"
+                        >
+                          <Package size={16} />
+                          Complete
+                        </button>
+                      )}
+                      
+                      <button className="bg-white border border-gray-100 p-4 rounded-[20px] text-gray-400 hover:text-gray-900 transition-all">
+                        <MessageCircle size={20} />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };

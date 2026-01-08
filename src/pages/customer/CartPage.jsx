@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Minus, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, MessageCircle, ShoppingBag, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAppData } from '../../context/AppDataContext';
-import { Card, CardContent } from '../../components/common/Card';
-import Button from '../../components/common/Button';
+import Navbar from '../../components/common/Navbar';
+import { Footer } from '../../components/common/Footer';
 
 const CartPage = () => {
   const navigate = useNavigate();
@@ -33,112 +34,183 @@ const CartPage = () => {
   const handleShareOnWhatsApp = (order) => {
     const vendorName = vendor?.name || 'Vendor';
     const itemsList = order.items
-      .map(item => `• ${item.quantity}x ${item.name}`)
+      .map(item => `• ${item.qty}x ${item.name}`)
       .join('\n');
-    const message = `*New Order*\n\n*Vendor:* ${vendorName}\n*Items:*\n${itemsList}\n\n*Total:* ₹${order.total}\n*Address:* ${order.customerAddress}\n\nStatus: ${order.status}`;
+    const message = `*Order Confirmation*\n\n*Vendor:* ${vendorName}\n*Items:*\n${itemsList}\n\n*Total:* ₹${order.total}\n\nStatus: ${order.status}`;
     const encoded = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encoded}`, '_blank');
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 max-w-mobile mx-auto md:max-w-tablet lg:max-w-desktop pb-24">
-      <div className="bg-white p-4 sticky top-0 z-20 shadow-sm flex items-center justify-between">
-        <button onClick={() => navigate('/customer')} className="flex items-center text-sm text-gray-700">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </button>
-        <div className="font-bold text-gray-900">Cart</div>
-        <div className="w-10" />
-      </div>
-
-      {lastOrder ? (
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-center space-y-4 max-w-sm">
-            <div className="text-green-600 text-4xl mb-2">✓</div>
-            <div className="text-xl font-bold text-gray-900">Order Placed!</div>
-            <div className="text-sm text-gray-600">
-              Your order has been sent to {vendor?.name || 'the vendor'}.
-            </div>
-            <div className="space-y-2 pt-2">
-              <Button
-                fullWidth
-                onClick={() => handleShareOnWhatsApp(lastOrder)}
-                className="flex items-center justify-center gap-2"
-              >
-                <MessageCircle size={18} />
-                Share on WhatsApp
-              </Button>
-              <Button
-                variant="outline"
-                fullWidth
-                onClick={() => navigate('/customer/orders')}
-              >
-                View My Orders
-              </Button>
-            </div>
+    <div className="min-h-screen bg-[#FDF9DC] font-sans selection:bg-[#CDF546]">
+      <Navbar role="customer" />
+      
+      <div className="max-w-7xl mx-auto px-6 pt-32 pb-20 flex-1">
+        <div className="flex items-center gap-6 mb-12">
+          <button 
+            onClick={() => navigate('/customer')}
+            className="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:shadow-xl transition-all"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1 className="text-4xl font-heading font-black text-gray-900 uppercase tracking-tight">Your Cart</h1>
+            <p className="text-gray-400 font-bold text-[11px] uppercase tracking-[0.3em] mt-1">Review your plate before ordering</p>
           </div>
         </div>
-      ) : (
-        <>
-          <div className="p-4 space-y-4">
-            {vendor && (
-              <div className="text-sm text-gray-700">
-                Ordering from: <span className="font-semibold">{vendor.name}</span>
-              </div>
-            )}
 
-            {vendor && !vendor.verified && (
-              <div className="bg-red-50 border border-red-100 text-red-700 rounded-xl p-4 text-sm">
-                This vendor is currently <span className="font-semibold">not verified</span>. You cannot place an order.
+        {lastOrder ? (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-[56px] p-12 md:p-20 text-center border border-gray-100 shadow-2xl max-w-2xl mx-auto overflow-hidden relative"
+          >
+            <div className="absolute top-0 left-0 w-full h-2 bg-[#CDF546]" />
+            <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-10 text-[#1A6950]">
+              <ShieldCheck size={48} />
+            </div>
+            <h2 className="text-4xl font-heading font-black text-gray-900 uppercase tracking-tighter mb-4">Order Successful!</h2>
+            <p className="text-gray-400 font-medium text-lg mb-12">
+              Your order from <span className="text-[#1A6950] font-black">{vendor?.name}</span> has been placed.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={() => handleShareOnWhatsApp(lastOrder)}
+                className="flex-1 bg-gray-900 text-white py-6 rounded-3xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-black transition-all"
+              >
+                <MessageCircle size={18} />
+                Share Order
+              </button>
+              <button
+                onClick={() => navigate('/customer/orders')}
+                className="flex-1 bg-white border border-gray-100 text-gray-900 py-6 rounded-3xl font-black uppercase tracking-widest text-xs hover:shadow-xl transition-all"
+              >
+                View History
+              </button>
+            </div>
+          </motion.div>
+        ) : !cart.length ? (
+          <div className="bg-white rounded-[48px] p-20 text-center border border-gray-100 shadow-sm max-w-2xl mx-auto">
+            <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8">
+              <ShoppingBag className="text-gray-200" size={40} />
+            </div>
+            <h3 className="text-2xl font-heading font-black text-gray-900 uppercase tracking-tight">Empty Cart</h3>
+            <p className="text-gray-400 font-medium mt-2">Hungry? Add some delicious items to your cart.</p>
+            <button 
+              onClick={() => navigate('/customer')}
+              className="mt-10 bg-[#1A6950] text-white px-10 py-5 rounded-3xl font-black uppercase tracking-widest text-xs"
+            >
+              Explore Vendors
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+            <div className="lg:col-span-8 space-y-6">
+              <div className="bg-white/50 backdrop-blur-md p-6 rounded-[32px] border border-white/50 mb-8 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm">
+                    <Clock size={20} className="text-[#1A6950]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Ordering From</p>
+                    <p className="font-black uppercase tracking-tight text-gray-900">{vendor?.name}</p>
+                  </div>
+                </div>
+                {!vendor?.verified && (
+                  <span className="bg-red-50 text-red-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-100">
+                    Not Verified
+                  </span>
+                )}
               </div>
-            )}
 
-            {!cart.length ? (
-              <div className="text-sm text-gray-600">Your cart is empty.</div>
-            ) : (
-              <div className="space-y-3">
-                {cart.map((ci) => (
-                  <Card key={`${ci.vendorId}-${ci.item.id}`}>
-                    <CardContent className="p-4 flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-gray-900">{ci.item.name}</div>
-                        <div className="text-sm text-gray-600">₹{ci.item.price} × {ci.qty}</div>
+              <div className="space-y-4">
+                <AnimatePresence>
+                  {cart.map((ci) => (
+                    <motion.div 
+                      layout
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      key={`${ci.vendorId}-${ci.item.id}`}
+                      className="group bg-white rounded-[40px] p-8 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center group-hover:bg-[#CDF546] transition-colors duration-500">
+                          <ShoppingBag size={24} className="text-[#1A6950]" />
+                        </div>
+                        <div>
+                          <h4 className="text-xl font-black uppercase tracking-tight text-gray-900 mb-1">{ci.item.name}</h4>
+                          <p className="text-[#1A6950] font-black text-lg">₹{ci.item.price}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
+
+                      <div className="flex items-center gap-4 bg-gray-50 p-2 rounded-2xl border border-gray-100">
                         <button
                           onClick={() => updateCartQty({ vendorId: ci.vendorId, itemId: ci.item.id, qty: ci.qty - 1 })}
-                          className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"
+                          className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 hover:shadow-md transition-all"
                         >
                           <Minus size={16} />
                         </button>
-                        <div className="w-8 text-center font-medium">{ci.qty}</div>
+                        <span className="w-8 text-center font-black text-gray-900">{ci.qty}</span>
                         <button
                           onClick={() => updateCartQty({ vendorId: ci.vendorId, itemId: ci.item.id, qty: ci.qty + 1 })}
-                          className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center"
+                          className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 hover:shadow-md transition-all"
                         >
                           <Plus size={16} />
                         </button>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
-            )}
-          </div>
-
-          {cart.length > 0 && (
-            <div className="fixed bottom-0 left-0 right-0 max-w-mobile mx-auto md:max-w-tablet lg:max-w-desktop bg-white border-t border-gray-100 p-4 space-y-2">
-              <div className="flex justify-between text-sm text-gray-700">
-                <span>Total</span>
-                <span className="font-bold text-gray-900">₹{cartSummary.total}</span>
-              </div>
-              <Button fullWidth size="lg" disabled={placing || !canPlaceOrder} onClick={handlePlaceOrder}>
-                {placing ? 'Placing...' : 'Place Order'}
-              </Button>
             </div>
-          )}
-        </>
-      )}
+
+            <div className="lg:col-span-4">
+              <div className="sticky top-32 bg-gray-900 rounded-[56px] p-12 text-white shadow-2xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-[#CDF546] rounded-full blur-[100px] opacity-10 translate-x-1/2 -translate-y-1/2" />
+                
+                <h3 className="text-2xl font-heading font-black uppercase mb-10 relative z-10">Bill Summary</h3>
+                
+                <div className="space-y-6 relative z-10 mb-12">
+                  <div className="flex justify-between items-center text-white/60 font-medium">
+                    <span className="uppercase tracking-widest text-[10px]">Subtotal</span>
+                    <span className="font-bold">₹{cartSummary.total}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-white/60 font-medium">
+                    <span className="uppercase tracking-widest text-[10px]">Delivery Fee</span>
+                    <span className="font-bold text-[#CDF546]">FREE</span>
+                  </div>
+                  <div className="pt-6 border-t border-white/10 flex justify-between items-end">
+                    <span className="uppercase tracking-[0.2em] text-[10px] font-black text-[#CDF546]">Total Amount</span>
+                    <span className="text-5xl font-black">₹{cartSummary.total}</span>
+                  </div>
+                </div>
+
+                {!canPlaceOrder && (
+                  <p className="text-red-400 text-xs font-bold uppercase mb-6 text-center tracking-widest">
+                    Vendor Verification Required
+                  </p>
+                )}
+
+                <button 
+                  disabled={placing || !canPlaceOrder}
+                  onClick={handlePlaceOrder}
+                  className={`w-full py-6 rounded-[28px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
+                    canPlaceOrder 
+                      ? 'bg-[#CDF546] text-gray-900 hover:scale-105 shadow-xl shadow-[#CDF546]/20' 
+                      : 'bg-white/5 text-white/20 cursor-not-allowed'
+                  }`}
+                >
+                  {placing ? 'Processing...' : 'Place Order'}
+                  {!placing && <ArrowRight size={20} />}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      {!lastOrder && <Footer />}
     </div>
   );
 };

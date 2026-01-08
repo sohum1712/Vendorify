@@ -4,6 +4,7 @@ import { ROLES } from '../constants/roles';
 import Hero from '../components/Hero';
 import Navbar from '../components/common/Navbar';
 import CategoriesCarousel from '../components/CategoriesCarousel';
+import { Footer } from '../components/common/Footer';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -26,6 +27,7 @@ const LandingPage = () => {
         />
       </div>
       <CategoriesCarousel />
+      <Footer />
     </div>
   );
 };

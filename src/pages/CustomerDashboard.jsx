@@ -6,6 +6,7 @@ import { CATEGORIES } from '../constants/roles';
 import { useAppData } from '../context/AppDataContext';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Navbar from '../components/common/Navbar';
+import { Footer } from '../components/common/Footer';
 
 const CustomerDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -180,9 +181,9 @@ const CustomerDashboard = () => {
                       </h3>
                       
                       <div className="flex items-center justify-between opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
-                        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/70 max-w-[200px] truncate">
-                          {vendor.address}
-                        </p>
+                          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/70 max-w-[200px] truncate">
+                            {typeof vendor.address === 'string' ? vendor.address : 'Roaming nearby'}
+                          </p>
                         <button className="bg-white text-gray-900 w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
                           <ArrowRight size={20} />
                         </button>
@@ -218,6 +219,7 @@ const CustomerDashboard = () => {
           <User size={24} />
         </button>
       </div>
+      <Footer />
     </div>
   );
 };

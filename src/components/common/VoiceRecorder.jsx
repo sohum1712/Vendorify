@@ -1,11 +1,21 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 
-const VoiceRecorder = ({ onTranscript, disabled = false, className = '' }) => {
-  const [isRecording, setIsRecording] = useState(false);
+const VoiceRecorder = ({ 
+  onTranscript, 
+  disabled = false, 
+  className = '',
+  language = 'en-US',
+  isListening,
+  setIsListening,
+  placeholder = "Speak now..."
+}) => {
+  const [internalIsRecording, setInternalIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const recognitionRef = useRef(null);
+
+  const isRecording = isListening !== undefined ? isListening : internalIsRecording;
 
   const startRecording = useCallback(async () => {
     setError(null);
@@ -20,10 +30,11 @@ const VoiceRecorder = ({ onTranscript, disabled = false, className = '' }) => {
 
     recognition.continuous = false;
     recognition.interimResults = false;
-    recognition.lang = 'en-US';
+    recognition.lang = language;
 
     recognition.onstart = () => {
-      setIsRecording(true);
+      if (setIsListening) setIsListening(true);
+      else setInternalIsRecording(true);
     };
 
     recognition.onresult = (event) => {
@@ -36,11 +47,13 @@ const VoiceRecorder = ({ onTranscript, disabled = false, className = '' }) => {
     recognition.onerror = (event) => {
       console.error('Speech recognition error', event.error);
       setError(`Speech recognition error: ${event.error}`);
-      setIsRecording(false);
+      if (setIsListening) setIsListening(false);
+      else setInternalIsRecording(false);
     };
 
     recognition.onend = () => {
-      setIsRecording(false);
+      if (setIsListening) setIsListening(false);
+      else setInternalIsRecording(false);
       setIsProcessing(false);
     };
 
@@ -52,15 +65,16 @@ const VoiceRecorder = ({ onTranscript, disabled = false, className = '' }) => {
       setError('Failed to start speech recognition. Please check microphone permissions.');
       setIsProcessing(false);
     }
-  }, [onTranscript]);
+  }, [onTranscript, language, setIsListening]);
 
   const stopRecording = useCallback(() => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
-    setIsRecording(false);
+    if (setIsListening) setIsListening(false);
+    else setInternalIsRecording(false);
     setIsProcessing(false);
-  }, []);
+  }, [setIsListening]);
 
   const handleClick = () => {
     if (disabled || isProcessing) return;

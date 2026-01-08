@@ -7,6 +7,7 @@ import { useAppData } from '../context/AppDataContext';
 import VendorVoiceAssistant from '../components/vendor/VendorVoiceAssistant';
 import AIProductListing from '../components/vendor/AIProductListing';
 import Navbar from '../components/common/Navbar';
+import { Footer } from '../components/common/Footer';
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
@@ -277,6 +278,7 @@ const VendorDashboard = () => {
           onProductAdded={handleAddProduct}
         />
       )}
+      <Footer />
     </div>
   );
 };
