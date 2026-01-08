@@ -16,12 +16,12 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-600 to-violet-700 flex flex-col items-center justify-center p-6 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-teal to-deep-green flex flex-col items-center justify-center p-6 text-white">
       <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-6 shadow-xl transform rotate-3">
-        <ShoppingBag size={40} className="text-indigo-600" />
+        <ShoppingBag size={40} className="text-teal" />
       </div>
-      <h1 className="text-4xl font-extrabold mb-2 tracking-tight">Vendorify</h1>
-      <p className="text-indigo-100 text-center mb-12 max-w-xs">
+      <h1 className="text-5xl font-extrabold mb-2 tracking-tighter font-helvetica uppercase">Vendorify</h1>
+      <p className="text-lime text-center mb-12 max-w-xs font-archivo">
         Connecting you to local street vendors. Real-time discovery, simple ordering.
       </p>
       

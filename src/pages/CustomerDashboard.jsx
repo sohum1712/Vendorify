@@ -42,29 +42,29 @@ const CustomerDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 max-w-mobile mx-auto md:max-w-tablet lg:max-w-desktop relative">
+    <div className="min-h-screen bg-beige pb-20 max-w-mobile mx-auto md:max-w-tablet lg:max-w-desktop relative">
       {/* Header */}
-      <div className="bg-white p-4 sticky top-0 z-20 shadow-sm">
+      <div className="bg-white p-4 sticky top-0 z-20 shadow-sm border-b border-teal/5">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <p className="text-xs text-gray-500">Location</p>
-            <div className="flex items-center font-bold text-gray-800 text-sm">
-              <MapPin size={14} className="text-indigo-600 mr-1" />
+            <p className="text-xs text-teal/60 font-medium">Location</p>
+            <div className="flex items-center font-bold text-deep-green text-sm">
+              <MapPin size={14} className="text-teal mr-1" />
               MG Road, Bengaluru
             </div>
           </div>
-          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-            <User size={16} className="text-gray-600" />
+          <div className="w-8 h-8 bg-lime/20 rounded-full flex items-center justify-center border border-teal/10">
+            <User size={16} className="text-teal" />
           </div>
         </div>
         
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-teal/40" size={18} />
           <input
             type="text"
             placeholder="Search 'Pani Puri' or 'Tea'..."
-            className="w-full bg-gray-100 pl-10 pr-4 py-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+            className="w-full bg-beige/50 border border-teal/10 pl-10 pr-4 py-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal focus:bg-white transition-all"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -77,7 +77,7 @@ const CustomerDashboard = () => {
           <>
             {/* Categories */}
             <div>
-              <h2 className="font-bold text-gray-800 mb-3">Categories</h2>
+              <h2 className="font-bold text-deep-green mb-3 uppercase tracking-wider text-xs font-archivo">Categories</h2>
               <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
                 {CATEGORIES.map(category => {
                   const IconComponent = iconMap[category.icon];
@@ -85,20 +85,20 @@ const CustomerDashboard = () => {
                     <button
                       key={category.id}
                       onClick={() => setSelectedCategory(category.id)}
-                      className={`flex flex-col items-center min-w-[70px] space-y-2 ${
+                      className={`flex flex-col items-center min-w-[70px] space-y-2 transition-opacity ${
                         selectedCategory === category.id ? 'opacity-100' : 'opacity-60'
                       }`}
                     >
                       <div
-                        className={`w-14 h-14 rounded-full flex items-center justify-center shadow-sm transition-all ${
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm transition-all ${
                           selectedCategory === category.id
-                            ? 'bg-indigo-600 text-white scale-110'
-                            : 'bg-white text-gray-700 border border-gray-100'
+                            ? 'bg-teal text-white scale-105 rotate-3'
+                            : 'bg-white text-teal border border-teal/10'
                         }`}
                       >
                         {IconComponent && <IconComponent size={20} />}
                       </div>
-                      <span className="text-xs font-medium text-gray-600">{category.name}</span>
+                      <span className="text-[10px] font-bold text-deep-green/70 uppercase tracking-tighter">{category.name}</span>
                     </button>
                   );
                 })}
@@ -107,7 +107,7 @@ const CustomerDashboard = () => {
 
             {/* Vendors List */}
             <div>
-              <h2 className="font-bold text-gray-800 mb-3">Nearby Vendors</h2>
+              <h2 className="font-bold text-deep-green mb-3 uppercase tracking-wider text-xs font-archivo">Nearby Vendors</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredVendors.map(vendor => (
                   <Card
@@ -125,20 +125,20 @@ const CustomerDashboard = () => {
                     </div>
                     <CardContent className="p-3">
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-bold text-gray-800 truncate">{vendor.name}</h3>
+                        <h3 className="font-bold text-deep-green truncate font-helvetica uppercase tracking-tighter">{vendor.name}</h3>
                         <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${
-                            vendor.verified ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase whitespace-nowrap ${
+                            vendor.verified ? 'bg-teal/10 text-teal' : 'bg-red-50 text-red-600'
                           }`}
                         >
                           {vendor.verified ? 'Verified' : 'Not verified'}
                         </span>
                       </div>
                       <div className="flex justify-between items-center mt-1">
-                        <p className="text-sm text-gray-500 truncate">
+                        <p className="text-xs text-teal/70 font-medium truncate">
                           {vendor.category === 'food' ? 'Street Food' : vendor.category}
                         </p>
-                        <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">
+                        <span className="text-[10px] bg-lime/20 px-2 py-0.5 rounded font-bold text-deep-green">
                           {vendor.distance}
                         </span>
                       </div>
@@ -242,36 +242,36 @@ const CustomerDashboard = () => {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 py-2 px-6 flex justify-between items-center z-40 max-w-mobile mx-auto md:max-w-tablet lg:max-w-desktop">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-teal/10 py-2 px-6 flex justify-between items-center z-40 max-w-mobile mx-auto md:max-w-tablet lg:max-w-desktop">
         <button 
           onClick={() => setActiveTab('home')}
-          className={`flex flex-col items-center ${activeTab === 'home' ? 'text-indigo-600' : 'text-gray-400'}`}
+          className={`flex flex-col items-center ${activeTab === 'home' ? 'text-teal' : 'text-deep-green/40'}`}
         >
-          <Home size={20} className={activeTab === 'home' ? 'fill-indigo-100' : ''} />
-          <span className="text-[10px] font-medium">Home</span>
+          <Home size={20} className={activeTab === 'home' ? 'fill-lime/30' : ''} />
+          <span className="text-[10px] font-bold uppercase tracking-tighter">Home</span>
         </button>
-        <button onClick={() => navigate('/customer/profile')} className="flex flex-col items-center text-gray-400">
+        <button onClick={() => navigate('/customer/profile')} className="flex flex-col items-center text-deep-green/40">
           <User size={20} />
-          <span className="text-[10px] font-medium">Profile</span>
+          <span className="text-[10px] font-bold uppercase tracking-tighter">Profile</span>
         </button>
-        <button className="w-12 h-12 bg-indigo-600 rounded-full -mt-6 flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+        <button className="w-12 h-12 bg-orange rounded-full -mt-6 flex items-center justify-center text-white shadow-lg shadow-orange/20 border-4 border-white">
           <Search size={24} />
         </button>
         <button 
           onClick={() => setActiveTab('history')}
-          className={`flex flex-col items-center ${activeTab === 'history' ? 'text-indigo-600' : 'text-gray-400'}`}
+          className={`flex flex-col items-center ${activeTab === 'history' ? 'text-teal' : 'text-deep-green/40'}`}
         >
           <Clock size={20} />
-          <span className="text-[10px] font-medium">History</span>
+          <span className="text-[10px] font-bold uppercase tracking-tighter">History</span>
         </button>
         <button 
           onClick={() => setActiveTab('notifications')}
-          className={`flex flex-col items-center relative ${activeTab === 'notifications' ? 'text-indigo-600' : 'text-gray-400'}`}
+          className={`flex flex-col items-center relative ${activeTab === 'notifications' ? 'text-teal' : 'text-deep-green/40'}`}
         >
           <Bell size={20} />
-          <span className="text-[10px] font-medium">Alerts</span>
+          <span className="text-[10px] font-bold uppercase tracking-tighter">Alerts</span>
           {notifications.length > 0 && (
-            <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            <span className="absolute -top-1 -right-1 w-2 h-2 bg-orange rounded-full"></span>
           )}
         </button>
       </div>

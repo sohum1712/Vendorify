@@ -139,7 +139,7 @@ const VendorDashboard = () => {
             <div className="flex gap-2">
               <button
                 onClick={() => setShowAIListing(true)}
-                className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-indigo-700"
+                className="text-xs bg-teal text-white px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-indigo-700"
               >
                 <Camera size={14} />
                 AI Add

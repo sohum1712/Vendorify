@@ -4,21 +4,32 @@ module.exports = {
     "./src/**/*.{js,jsx,ts,tsx}",
     "./public/index.html"
   ],
-  theme: {
-    extend: {
-      colors: {
-        primary: {
-          DEFAULT: '#4f46e5',
-          light: '#818cf8',
-          dark: '#4338ca',
+    theme: {
+      extend: {
+        colors: {
+          lime: '#CDF546',
+          beige: '#FDF9DC',
+          orange: '#F56013',
+          teal: '#1A6950',
+          'deep-green': '#01583F',
+          primary: {
+            DEFAULT: '#1A6950',
+            light: '#CDF546',
+            dark: '#01583F',
+          },
+          secondary: {
+            DEFAULT: '#F56013',
+            light: '#FDF9DC',
+            dark: '#F56013',
+          },
         },
-        secondary: {
-          DEFAULT: '#10b981',
-          light: '#34d399',
-          dark: '#059669',
+        fontFamily: {
+          sans: ['Archivo', 'ui-sans-serif', 'system-ui'],
+          archivo: ['Archivo', 'sans-serif'],
+          helvetica: ['"Helvetica Neue"', 'sans-serif'],
+          deviantly: ['"Deviantly Brush"', 'cursive'],
         },
-      },
-      boxShadow: {
+        boxShadow: {
         'card': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
         'card-hover': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
       },

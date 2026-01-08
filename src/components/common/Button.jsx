@@ -13,14 +13,14 @@ const Button = ({
   icon: Icon,
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'inline-flex items-center justify-center rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal disabled:opacity-50 disabled:cursor-not-allowed';
   
   const variants = {
-    primary: 'bg-indigo-600 text-white hover:bg-indigo-700',
-    secondary: 'bg-white text-indigo-600 border border-indigo-600 hover:bg-indigo-50',
-    outline: 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50',
+    primary: 'bg-teal text-white hover:bg-deep-green',
+    secondary: 'bg-orange text-white hover:bg-orange/90',
+    outline: 'bg-white text-teal border border-teal hover:bg-teal/5',
     danger: 'bg-red-600 text-white hover:bg-red-700',
-    ghost: 'text-gray-700 hover:bg-gray-100',
+    ghost: 'text-teal hover:bg-teal/5',
   };
 
   const sizes = {

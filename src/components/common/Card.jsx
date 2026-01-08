@@ -19,7 +19,7 @@ const Card = ({
 
   return (
     <div
-      className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden ${paddingClasses[padding]} ${hoverClass} ${className}`}
+      className={`bg-white rounded-xl shadow-sm border border-teal/10 overflow-hidden ${paddingClasses[padding]} ${hoverClass} ${className}`}
       {...props}
     >
       {children}
@@ -40,7 +40,7 @@ export default React.memo(Card);
 
 // Card Header Component
 export const CardHeader = ({ children, className = '', ...props }) => (
-  <div className={`border-b border-gray-100 pb-3 mb-3 ${className}`} {...props}>
+  <div className={`border-b border-teal/10 pb-3 mb-3 ${className}`} {...props}>
     {children}
   </div>
 );
@@ -52,7 +52,7 @@ CardHeader.propTypes = {
 
 // Card Title Component
 export const CardTitle = ({ children, className = '', ...props }) => (
-  <h3 className={`text-lg font-semibold text-gray-900 ${className}`} {...props}>
+  <h3 className={`text-lg font-semibold text-deep-green ${className}`} {...props}>
     {children}
   </h3>
 );
@@ -76,7 +76,7 @@ CardContent.propTypes = {
 
 // Card Footer Component
 export const CardFooter = ({ children, className = '', ...props }) => (
-  <div className={`border-t border-gray-100 pt-3 mt-3 ${className}`} {...props}>
+  <div className={`border-t border-teal/10 pt-3 mt-3 ${className}`} {...props}>
     {children}
   </div>
 );
