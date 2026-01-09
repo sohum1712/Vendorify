@@ -12,38 +12,66 @@ import { Footer } from '../components/common/Footer';
 const VendorDashboard = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { getOrdersForVendor, getVendorById } = useAppData();
-  const [isOnline, setIsOnline] = useState(true);
-  const [showAIListing, setShowAIListing] = useState(false);
-  const [menuItems, setMenuItems] = useState([
-    { id: 1, name: 'Pani Puri (6pcs)', price: 30, available: true },
-    { id: 2, name: 'Dahi Puri', price: 50, available: true },
-    { id: 3, name: 'Masala Puri', price: 40, available: false },
-  ]);
+    const { getOrdersForVendor, getVendorById, userLocation, geoError } = useAppData();
+    const [isOnline, setIsOnline] = useState(true);
+    const [showAIListing, setShowAIListing] = useState(false);
+    const [menuItems, setMenuItems] = useState([
+      { id: 1, name: 'Pani Puri (6pcs)', price: 30, available: true },
+      { id: 2, name: 'Dahi Puri', price: 50, available: true },
+      { id: 3, name: 'Masala Puri', price: 40, available: false },
+    ]);
 
-  const vendorId = 1;
-  const vendor = getVendorById(vendorId);
-  const orders = getOrdersForVendor(vendorId);
-  const completedOrders = orders.filter(o => o.status === 'COMPLETED');
-  const totalEarnings = completedOrders.reduce((sum, o) => sum + o.total, 0);
+    const vendorId = 1;
+    const vendor = getVendorById(vendorId);
+    const orders = getOrdersForVendor(vendorId);
+    const completedOrders = orders.filter(o => o.status === 'COMPLETED');
+    const totalEarnings = completedOrders.reduce((sum, o) => sum + o.total, 0);
 
-  const handleAddProduct = useCallback((newProduct) => {
-    setMenuItems(prev => [...prev, newProduct]);
-  }, []);
+    const handleAddProduct = useCallback((newProduct) => {
+      setMenuItems(prev => [...prev, newProduct]);
+    }, []);
 
-  const stats = [
-    { id: 1, name: 'Today\'s Earnings', value: '₹1,240', change: '+12%', icon: DollarSign, color: 'bg-[#CDF546] text-gray-900', delay: 0 },
-    { id: 2, name: 'Active Orders', value: orders.filter(o => o.status === 'NEW').length, change: '+2', icon: Package, color: 'bg-[#1A6950] text-white', delay: 0.1 },
-    { id: 3, name: 'Total Revenue', value: `₹${totalEarnings}`, change: '+8%', icon: TrendingUp, color: 'bg-white text-[#1A6950]', delay: 0.2 },
-    { id: 4, name: 'Avg Rating', value: '4.8', change: '+0.2', icon: Star, color: 'bg-gray-900 text-white', delay: 0.3 },
-  ];
+    const stats = [
+      { id: 1, name: 'Today\'s Earnings', value: '₹1,240', change: '+12%', icon: DollarSign, color: 'bg-[#CDF546] text-gray-900', delay: 0 },
+      { id: 2, name: 'Active Orders', value: orders.filter(o => o.status === 'NEW').length, change: '+2', icon: Package, color: 'bg-[#1A6950] text-white', delay: 0.1 },
+      { id: 3, name: 'Total Revenue', value: `₹${totalEarnings}`, change: '+8%', icon: TrendingUp, color: 'bg-white text-[#1A6950]', delay: 0.2 },
+      { id: 4, name: 'Avg Rating', value: '4.8', change: '+0.2', icon: Star, color: 'bg-gray-900 text-white', delay: 0.3 },
+    ];
 
-  return (
-    <div className="min-h-screen bg-[#FDF9DC] pb-24 font-sans selection:bg-[#CDF546]">
-      <Navbar role="vendor" />
+    return (
+      <div className="min-h-screen bg-[#FDF9DC] pb-24 font-sans selection:bg-[#CDF546]">
+        <Navbar role="vendor" />
 
-      <div className="max-w-7xl mx-auto px-6 pt-32">
-        {/* Modern Header Section */}
+        <div className="max-w-7xl mx-auto px-6 pt-32">
+          {/* Live Location Alert */}
+          {userLocation && (
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 flex items-center justify-between bg-[#1A6950] text-white px-8 py-4 rounded-[24px] shadow-lg"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-3 h-3 bg-[#CDF546] rounded-full animate-ping" />
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Live Location Tracking</p>
+                  <p className="font-bold text-sm">Lat: {userLocation.lat.toFixed(4)} • Lng: {userLocation.lng.toFixed(4)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest bg-black/20 px-4 py-2 rounded-full">
+                <Clock size={12} />
+                Updates every 2 min
+              </div>
+            </motion.div>
+          )}
+
+          {geoError && (
+            <div className="mb-8 bg-red-100 text-red-600 px-8 py-4 rounded-[24px] border border-red-200 text-sm font-bold uppercase tracking-widest flex items-center gap-3">
+              <MapPin size={18} />
+              {geoError} (Check Browser Permissions)
+            </div>
+          )}
+
+          {/* Modern Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
           <div className="flex items-center gap-8">
             <motion.div 

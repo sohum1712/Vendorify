@@ -1,5 +1,7 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { INITIAL_VENDORS } from '../constants/roles';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import { INITIAL_VENDORS, ROLES } from '../constants/roles';
+import { useAuth } from './AuthContext';
+import { useGeolocation } from '../hooks/useGeolocation';
 
 const STORAGE_KEYS = {
   vendors: 'vendorify_vendors',
@@ -35,9 +37,32 @@ const writeJson = (key, value) => {
 const uid = () => `ORD-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 
 export const AppDataProvider = ({ children }) => {
+  const { user } = useAuth();
   const [vendors, setVendors] = useState([]);
   const [orders, setOrders] = useState([]);
   const [cart, setCart] = useState([]);
+  const [userLocation, setUserLocation] = useState(null);
+
+  const updateVendorLocation = useCallback((vendorId, location) => {
+    setVendors((prev) => 
+      prev.map((v) => 
+        String(v.id) === String(vendorId) 
+          ? { ...v, location } 
+          : v
+      )
+    );
+  }, []);
+
+  const handleLocationUpdate = useCallback((location) => {
+    setUserLocation(location);
+    
+    // If user is a vendor, update their location in the global vendor list
+    if (user?.role === ROLES.VENDOR && user?.vendorId) {
+      updateVendorLocation(user.vendorId, location);
+    }
+  }, [user, updateVendorLocation]);
+
+  const { error: geoError } = useGeolocation(handleLocationUpdate, 120000);
 
   useEffect(() => {
     const storedVendors = readJson(STORAGE_KEYS.vendors, null);
@@ -153,6 +178,8 @@ export const AppDataProvider = ({ children }) => {
     orders,
     cart,
     cartSummary,
+    userLocation,
+    geoError,
     getVendorById,
     addToCart,
     updateCartQty,
@@ -162,6 +189,7 @@ export const AppDataProvider = ({ children }) => {
     getOrdersForVendor,
     updateOrderStatus,
     setVendorVerified,
+    updateVendorLocation,
   };
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
