@@ -109,9 +109,11 @@ export default function Navbar({ role = "landing" }) {
         {/* Logo - Center */}
         <Link to="/" className="flex items-center gap-2 flex-shrink-0 md:absolute md:left-1/2 md:-translate-x-1/2">
           <div className="flex items-center gap-2">
-            <div className="w-12 h-12 md:w-16 md:h-16 bg-[#1A6950] rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-[#CDF546] font-black text-2xl md:text-3xl">V</span>
-            </div>
+            <img 
+              src="/logo.svg" 
+              alt="Vendorify Logo" 
+              className="w-12 h-12 md:w-16 md:h-16 object-contain"
+            />
             <span className="text-2xl md:text-3xl font-heading font-black text-gray-900 tracking-tight uppercase">Vendorify</span>
           </div>
         </Link>

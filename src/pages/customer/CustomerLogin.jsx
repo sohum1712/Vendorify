@@ -45,8 +45,12 @@ const CustomerLogin = () => {
         <div className="bg-white/80 backdrop-blur-xl rounded-[48px] p-10 md:p-14 shadow-2xl border border-white/50">
           <div className="text-center mb-10">
             <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 bg-[#CDF546] rounded-[28px] flex items-center justify-center shadow-lg rotate-3 group-hover:rotate-0 transition-all duration-500">
-                <ShoppingBag size={36} className="text-gray-900" />
+              <div className="w-20 h-20 bg-[#CDF546] rounded-[28px] flex items-center justify-center shadow-lg rotate-3 group-hover:rotate-0 transition-all duration-500 p-4">
+                <img 
+                  src="/logo.svg" 
+                  alt="Vendorify Logo" 
+                  className="w-full h-full object-contain" 
+                />
               </div>
             </div>
             <h1 className="text-4xl font-heading font-black text-gray-900 uppercase tracking-tight mb-2">Welcome Back</h1>

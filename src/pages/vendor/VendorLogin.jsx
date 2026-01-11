@@ -44,8 +44,12 @@ const VendorLogin = () => {
         <div className="bg-white/80 backdrop-blur-xl rounded-[48px] p-10 md:p-14 shadow-2xl border border-white/50">
           <div className="text-center mb-10">
             <div className="flex justify-center mb-6">
-              <div className="w-20 h-20 bg-[#1A6950] rounded-[28px] flex items-center justify-center shadow-lg -rotate-3 group-hover:rotate-0 transition-all duration-500">
-                <Store size={36} className="text-[#CDF546]" />
+              <div className="w-20 h-20 bg-[#1A6950] rounded-[28px] flex items-center justify-center shadow-lg -rotate-3 group-hover:rotate-0 transition-all duration-500 p-4">
+                <img 
+                  src="/logo.svg" 
+                  alt="Vendorify Logo" 
+                  className="w-full h-full object-contain brightness-0 invert" 
+                />
               </div>
             </div>
             <h1 className="text-4xl font-heading font-black text-gray-900 uppercase tracking-tight mb-2">Vendor Portal</h1>
