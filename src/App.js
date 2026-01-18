@@ -10,7 +10,9 @@ import { AppDataProvider } from './context/AppDataContext';
 // Pages
 import LandingPage from './pages/LandingPage';
 import CustomerLogin from './pages/customer/CustomerLogin';
+import CustomerSignup from './pages/customer/CustomerSignup';
 import VendorLogin from './pages/vendor/VendorLogin';
+import VendorSignup from './pages/vendor/VendorSignup';
 import CustomerDashboard from './pages/CustomerDashboard';
 import VendorDashboard from './pages/VendorDashboard';
 import AdminDashboard from './pages/AdminDashboard';
@@ -51,8 +53,12 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             
             {/* Login Routes */}
-            <Route path="/login/customer" element={<CustomerLogin />} />
+              <Route path="/login/customer" element={<CustomerLogin />} />
               <Route path="/login/vendor" element={<VendorLogin />} />
+              
+              {/* Signup Routes */}
+              <Route path="/signup/customer" element={<CustomerSignup />} />
+              <Route path="/signup/vendor" element={<VendorSignup />} />
               
               {/* Info Routes */}
               <Route path="/about" element={<InfoPage />} />
