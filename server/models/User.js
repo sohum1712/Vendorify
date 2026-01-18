@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true,
-        select: false
+        select: false // Don't return password by default
     },
     role: {
         type: String,
@@ -36,14 +36,21 @@ const userSchema = new mongoose.Schema({
     }
 });
 
-userSchema.pre('save', async function(next) {
+// Hash password before saving
+userSchema.pre('save', async function (next) {
     if (!this.isModified('password')) return next();
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
+
+    try {
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
+        next();
+    } catch (err) {
+        next(err);
+    }
 });
 
-userSchema.methods.comparePassword = async function(candidatePassword) {
+// Method to compare password
+userSchema.methods.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 

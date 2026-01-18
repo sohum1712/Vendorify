@@ -4,32 +4,23 @@ import { ROLES } from '../constants/roles';
 
 export const AuthContext = createContext(null);
 
-const API_BASE_URL = 'http://localhost:5000/api';
-
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Check for existing session on initial load
   useEffect(() => {
     const storedUser = localStorage.getItem('vendorify_user');
-    const storedToken = localStorage.getItem('vendorify_token');
-    if (storedUser && storedToken) {
+    if (storedUser) {
       setUser(JSON.parse(storedUser));
-      setToken(storedToken);
     }
     setLoading(false);
   }, []);
 
-  const getAuthHeaders = () => {
-    const storedToken = token || localStorage.getItem('vendorify_token');
-    return storedToken ? { Authorization: `Bearer ${storedToken}` } : {};
-  };
-
   const register = async (userData) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      const response = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -43,19 +34,10 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.message || 'Registration failed');
       }
 
-      const userInfo = {
-        _id: data._id,
-        name: data.name,
-        email: data.email,
-        mobile: data.mobile,
-        role: data.role,
-      };
+      setUser(data);
+      localStorage.setItem('vendorify_user', JSON.stringify(data));
 
-      setUser(userInfo);
-      setToken(data.token);
-      localStorage.setItem('vendorify_user', JSON.stringify(userInfo));
-      localStorage.setItem('vendorify_token', data.token);
-
+      // Redirect based on role
       const redirectPath =
         data.role === ROLES.ADMIN ? '/admin' :
           data.role === ROLES.VENDOR ? '/vendor' :
@@ -68,11 +50,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (credentials) => {
+  const login = async (arg1, arg2) => {
     try {
+      let credentials = {};
+      if (typeof arg1 === 'object') {
+        // Called as login({ mobile, password }) OR login({ email, password })
+        credentials = arg1;
+      } else {
+        // Called as login(email, password) - legacy support
+        credentials = { email: arg1, password: arg2 };
+      }
+
       console.log("Login credentials:", credentials);
 
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -86,19 +77,10 @@ export const AuthProvider = ({ children }) => {
         throw new Error(data.message || 'Login failed');
       }
 
-      const userInfo = {
-        _id: data._id,
-        name: data.name,
-        email: data.email,
-        mobile: data.mobile,
-        role: data.role,
-      };
+      setUser(data);
+      localStorage.setItem('vendorify_user', JSON.stringify(data));
 
-      setUser(userInfo);
-      setToken(data.token);
-      localStorage.setItem('vendorify_user', JSON.stringify(userInfo));
-      localStorage.setItem('vendorify_token', data.token);
-
+      // Redirect based on role
       console.log("Login Success. User Role:", data.role);
       const redirectPath =
         data.role === ROLES.ADMIN ? '/admin' :
@@ -116,9 +98,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     setUser(null);
-    setToken(null);
     localStorage.removeItem('vendorify_user');
-    localStorage.removeItem('vendorify_token');
     navigate('/');
   };
 
@@ -133,37 +113,17 @@ export const AuthProvider = ({ children }) => {
     return user.role === requiredRole;
   };
 
-  const authFetch = async (url, options = {}) => {
-    const headers = {
-      'Content-Type': 'application/json',
-      ...getAuthHeaders(),
-      ...options.headers,
-    };
-
-    const response = await fetch(url, { ...options, headers });
-    
-    if (response.status === 401) {
-      logout();
-      throw new Error('Session expired. Please login again.');
-    }
-    
-    return response;
-  };
-
   return (
     <AuthContext.Provider
       value={{
         user,
-        token,
         loading,
         register,
         login,
         logout,
         updateUser,
         hasRole,
-        isAuthenticated: !!user && !!token,
-        getAuthHeaders,
-        authFetch,
+        isAuthenticated: !!user
       }}
     >
       {!loading && children}

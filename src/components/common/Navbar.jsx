@@ -52,90 +52,90 @@ export default function Navbar({ role = "landing" }) {
   const currentLinks = navLinks[role] || navLinks.landing;
 
   return (
-      <nav className="fixed top-2 z-50 w-full flex justify-center px-4 md:px-0 transition-all duration-300">
-        <div className={`bg-white/95 backdrop-blur-xl px-4 md:px-8 py-3 flex items-center justify-between w-full max-w-7xl rounded-b-3xl shadow-lg border border-gray-100 ${
-          isScrolled ? 'ring-1 ring-gray-200/50' : ''
-        }`}>
-          
-          {/* Logo - Left */}
-          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-            <img 
-              src="/logo.svg" 
-              alt="Vendorify Logo" 
-              className="w-8 h-8 object-contain"
-            />
-            <span className="text-lg font-black text-gray-900 tracking-tight uppercase hidden sm:inline">Vendorify</span>
-          </Link>
-
-          {/* Center Links */}
-          <div className="hidden md:flex items-center gap-4 lg:gap-6">
-            {role === 'landing' && (
-              <div className="relative group">
-                <button className="flex items-center gap-1 text-gray-800 hover:text-emerald-700 transition-all font-bold text-xs uppercase tracking-wider">
-                  Products
-                  <ChevronDown className="h-3.5 w-3.5 text-gray-400 group-hover:text-emerald-700 transition-colors" />
+    <nav className="fixed top-2 z-50 w-full flex justify-center px-4 md:px-0 transition-all duration-300">
+      <div className={`bg-white/95 backdrop-blur-xl px-6 md:px-12 py-4 flex items-center justify-between w-full max-w-7xl rounded-b-3xl shadow-lg border border-gray-100 ${
+        isScrolled ? 'ring-1 ring-gray-200/50 scale-[1.02]' : ''
+      }`}>
+        
+        {/* Left Links */}
+        <div className="hidden md:flex items-center gap-8 flex-1">
+          {role === 'landing' && (
+            <div className="relative group">
+              <button className="flex items-center gap-1.5 text-gray-800 hover:text-emerald-700 transition-all font-bold text-sm uppercase tracking-wider">
+                Products
+                <ChevronDown className="h-4 w-4 text-gray-400 group-hover:text-emerald-700 transition-colors" />
+              </button>
+              <div className="absolute left-0 top-full mt-2 hidden group-hover:block bg-white/95 backdrop-blur-xl border border-gray-100 rounded-2xl shadow-2xl py-4 w-64">
+                <button onClick={() => scrollToSection('categories')} className="block w-full text-left px-6 py-3 hover:bg-yellow-50 text-gray-800 text-xs font-bold uppercase tracking-wider transition-colors">
+                  Categories
                 </button>
-                <div className="absolute left-0 top-full mt-2 hidden group-hover:block bg-white/95 backdrop-blur-xl border border-gray-100 rounded-2xl shadow-2xl py-3 w-56">
-                  <button onClick={() => scrollToSection('categories')} className="block w-full text-left px-5 py-2.5 hover:bg-yellow-50 text-gray-800 text-xs font-bold uppercase tracking-wider transition-colors">
-                    Categories
-                  </button>
-                  <button onClick={() => scrollToSection('how-it-works')} className="block w-full text-left px-5 py-2.5 hover:bg-yellow-50 text-gray-800 text-xs font-bold uppercase tracking-wider transition-colors">
-                    How it Works
-                  </button>
-                </div>
+                <button onClick={() => scrollToSection('how-it-works')} className="block w-full text-left px-6 py-3 hover:bg-yellow-50 text-gray-800 text-xs font-bold uppercase tracking-wider transition-colors">
+                  How it Works
+                </button>
               </div>
-            )}
-            {currentLinks.map((link, idx) => (
-              <div key={idx}>
-                {link.action ? (
-                  <button 
-                    onClick={link.action}
-                    className="text-gray-800 hover:text-emerald-700 transition-colors font-bold text-xs uppercase tracking-wider"
-                  >
-                    {link.name}
-                  </button>
-                ) : (
-                  <Link 
-                    to={link.to} 
-                    className="text-gray-800 hover:text-emerald-700 transition-colors font-bold text-xs uppercase tracking-wider"
-                  >
-                    {link.name}
-                  </Link>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Right Actions */}
-          <div className="hidden md:flex items-center gap-4">
-            {role === 'landing' ? (
-              <>
-                <Link to="/login/customer" className="text-gray-800 hover:text-emerald-700 transition-colors font-bold text-xs uppercase tracking-wider">
-                  Sign in
+            </div>
+          )}
+          {currentLinks.map((link, idx) => (
+            <div key={idx}>
+              {link.action ? (
+                <button 
+                  onClick={link.action}
+                  className="text-gray-800 hover:text-emerald-700 transition-colors font-bold text-sm uppercase tracking-wider"
+                >
+                  {link.name}
+                </button>
+              ) : (
+                <Link 
+                  to={link.to} 
+                  className="text-gray-800 hover:text-emerald-700 transition-colors font-bold text-sm uppercase tracking-wider"
+                >
+                  {link.name}
                 </Link>
-                <button 
-                  onClick={() => navigate('/login/vendor')}
-                  className="bg-[#CDF546] hover:bg-[#b8dd3e] text-gray-900 px-5 py-2.5 rounded-full font-bold text-xs flex items-center gap-2 uppercase tracking-wider shadow-md hover:shadow-lg transition-all"
-                >
-                  See a demo
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              </>
-            ) : (
-              <div className="flex items-center gap-3">
-                <button className="p-2 text-gray-400 hover:text-emerald-700 hover:bg-gray-100 rounded-lg transition-all">
-                  <Bell size={18} />
-                </button>
-                <button 
-                  onClick={logout}
-                  className="bg-gray-900 hover:bg-black text-white px-5 py-2.5 rounded-full font-bold uppercase tracking-wider text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-2"
-                >
-                  Log Out
-                  <LogOut size={14} className="text-[#CDF546]" />
-                </button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Logo - Center */}
+        <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 md:absolute md:left-1/2 md:-translate-x-1/2">
+          <img 
+            src="/logo.svg" 
+            alt="Vendorify Logo" 
+            className="w-24 h-24 md:w-24 md:h-24 object-contain"
+          />
+          <span className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight uppercase">Vendorify</span>
+        </Link>
+
+        {/* Right Actions */}
+        <div className="hidden md:flex items-center gap-6 flex-1 justify-end">
+          {role === 'landing' ? (
+            <>
+              <Link to="/login/customer" className="text-gray-800 hover:text-emerald-700 transition-colors font-bold text-sm uppercase tracking-wider">
+                Sign in
+              </Link>
+              <button 
+                onClick={() => navigate('/login/vendor')}
+                className="bg-[#CDF546] hover:bg-[#b8dd3e] text-gray-900 px-8 py-3 rounded-full font-bold text-sm flex items-center gap-2 uppercase tracking-wider shadow-lg hover:shadow-xl transition-all"
+              >
+                See a demo
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </>
+          ) : (
+            <div className="flex items-center gap-4">
+              <button className="p-2.5 text-gray-400 hover:text-emerald-700 hover:bg-gray-100 rounded-lg transition-all">
+                <Bell size={20} />
+              </button>
+              <button 
+                onClick={logout}
+                className="bg-gray-900 hover:bg-black text-white px-8 py-3 rounded-full font-bold uppercase tracking-wider text-sm shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+              >
+                Log Out
+                <LogOut size={16} className="text-[#CDF546]" />
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Mobile Toggle */}
         <button onClick={() => setIsOpen(!isOpen)} className="md:hidden p-2">

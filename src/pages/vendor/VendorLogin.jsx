@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, Lock, Phone, ShieldCheck, Shield, ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 
 const VendorLogin = () => {
+  const navigate = useNavigate();
   const { login } = useAuth();
   const [form, setForm] = useState({ mobile: '', password: '', aadhaar: '' });
   const [loading, setLoading] = useState(false);
@@ -20,14 +21,8 @@ const VendorLogin = () => {
     setLoading(true);
     setError('');
     try {
-      const result = await login({ mobile: form.mobile, password: form.password });
-      if (!result.success) {
-        if (result.message && result.message.includes('Problem with these credentials only')) {
-          setError('Problem with these credentials only');
-        } else {
-          setError(result.message || 'Login failed. Please check your credentials.');
-        }
-      }
+      await login({ mobile: form.mobile, password: form.password, role: 'vendor' });
+      // Navigation is handled by AuthContext
     } catch (err) {
       setError('Login failed. Please check your credentials.');
     } finally {

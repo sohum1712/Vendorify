@@ -1,40 +1,35 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Lock, Mail, Phone, ShieldCheck } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { ArrowRight, Lock, Mail, Phone, ShoppingBag, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 
 const CustomerLogin = () => {
+  const navigate = useNavigate();
   const { login } = useAuth();
   const [form, setForm] = useState({ mobile: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [useMobile, setUseMobile] = useState(true);
 
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      const identifier = useMobile ? form.mobile : form.email;
-      if (!identifier || !form.password) {
-        setError('Please fill all fields');
-        return;
-      }
-      setLoading(true);
-      setError('');
-      try {
-        const result = await login({ [useMobile ? 'mobile' : 'email']: identifier, password: form.password });
-        if (!result.success) {
-          if (result.message && result.message.includes('Problem with these credentials only')) {
-            setError('Problem with these credentials only');
-          } else {
-            setError(result.message || 'Login failed. Please check your credentials.');
-          }
-        }
-      } catch (err) {
-        setError('Login failed. Please check your credentials.');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const identifier = useMobile ? form.mobile : form.email;
+    if (!identifier || !form.password) {
+      setError('Please fill all fields');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      await login({ [useMobile ? 'mobile' : 'email']: identifier, password: form.password, role: 'customer' });
+      navigate('/customer');
+    } catch (err) {
+      setError('Login failed. Please check your credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#FDF9DC] flex items-center justify-center p-6 relative overflow-hidden font-sans">
