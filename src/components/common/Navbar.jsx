@@ -2,13 +2,15 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Menu, X, ChevronDown, ArrowRight, Bell, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAuth } from "../../context/AuthContext";
 
 export default function Navbar({ role = "landing" }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
-  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    navigate('/');
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -133,13 +135,13 @@ export default function Navbar({ role = "landing" }) {
               <button className="p-2.5 text-gray-400 hover:text-emerald-700 hover:bg-gray-100 rounded-lg transition-all">
                 <Bell size={20} />
               </button>
-              <button 
-                onClick={logout}
-                className="bg-gray-900 hover:bg-black text-white px-8 py-3 rounded-full font-bold uppercase tracking-wider text-sm shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
-              >
-                Log Out
-                <LogOut size={16} className="text-[#CDF546]" />
-              </button>
+                <button 
+                  onClick={handleLogout}
+                  className="bg-gray-900 hover:bg-black text-white px-8 py-3 rounded-full font-bold uppercase tracking-wider text-sm shadow-lg hover:shadow-xl transition-all flex items-center gap-2"
+                >
+                  Log Out
+                  <LogOut size={16} className="text-[#CDF546]" />
+                </button>
             </div>
           )}
         </div>
@@ -195,7 +197,7 @@ export default function Navbar({ role = "landing" }) {
               </>
             ) : (
               <button 
-                onClick={() => { logout(); setIsOpen(false); }}
+                onClick={() => { handleLogout(); setIsOpen(false); }}
                 className="bg-gray-900 hover:bg-black text-white px-8 py-5 rounded-2xl font-bold flex items-center justify-center gap-2 uppercase tracking-wider shadow-xl hover:shadow-2xl transition-all mx-auto"
               >
                 Log Out

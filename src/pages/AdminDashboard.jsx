@@ -1,14 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { LogOut, Users, Shield, BarChart2, Settings, TrendingUp, MessageSquare, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Users, Shield, BarChart2, Settings, TrendingUp, MessageSquare, Clock, CheckCircle, AlertCircle, LogOut } from 'lucide-react';
 import { Card, CardHeader, CardContent, CardTitle } from '../components/common/Card';
 import Button from '../components/common/Button';
 import { useAppData } from '../context/AppDataContext';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
   const { vendors, orders } = useAppData();
 
   const stats = [
@@ -18,7 +16,6 @@ const AdminDashboard = () => {
     { id: 4, name: 'Total Orders', value: orders.length, icon: TrendingUp, change: '+15%' },
   ];
 
-  // Mock support tickets
   const supportTickets = [
     { id: 1, title: 'Vendor unable to update menu', status: 'open', priority: 'high', time: '2 hours ago' },
     { id: 2, title: 'Payment issue reported', status: 'in-progress', priority: 'medium', time: '5 hours ago' },
@@ -27,7 +24,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 max-w-mobile mx-auto md:max-w-tablet lg:max-w-desktop shadow-2xl overflow-hidden relative">
-      {/* Header */}
       <div className="bg-indigo-700 text-white p-6 pb-12">
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -35,14 +31,13 @@ const AdminDashboard = () => {
             <p className="text-indigo-200 text-sm">Manage your vendors and platform</p>
           </div>
           <button 
-            onClick={logout}
+            onClick={() => navigate('/')}
             className="bg-white/10 p-2 rounded-lg hover:bg-white/20"
           >
             <LogOut size={18} />
           </button>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {stats.map((stat) => (
             <div key={stat.id} className="bg-white/10 rounded-lg p-3 text-center">
@@ -64,7 +59,6 @@ const AdminDashboard = () => {
       </div>
 
       <div className="p-5 -mt-8 space-y-6">
-        {/* Quick Actions */}
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
@@ -89,7 +83,6 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Order Analytics */}
         <Card>
           <CardHeader>
             <CardTitle>Order Analytics</CardTitle>
@@ -108,7 +101,6 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Support Tickets */}
         <Card>
           <CardHeader>
             <CardTitle>Support Tickets</CardTitle>
@@ -149,7 +141,6 @@ const AdminDashboard = () => {
         </Card>
       </div>
 
-      {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 py-2 px-6 flex justify-between items-center z-40 max-w-mobile mx-auto md:max-w-tablet lg:max-w-desktop">
         <button className="flex flex-col items-center text-indigo-600">
           <BarChart2 size={20} className="fill-indigo-100" />

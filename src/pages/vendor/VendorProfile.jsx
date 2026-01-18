@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../context/AppDataContext';
 import {
   Store,
@@ -17,17 +17,15 @@ import {
   LogOut
 } from 'lucide-react';
 
-import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/common/Navbar';
 import { Footer } from '../../components/common/Footer';
 
 const VendorProfile = () => {
-
-  const { logout } = useAuth();
+  const navigate = useNavigate();
   const { getVendorById, getOrdersForVendor } = useAppData();
   const [activeTab, setActiveTab] = useState('overview');
 
-  const vendorId = 1; // Static for demo
+  const vendorId = 1;
   const vendor = getVendorById(vendorId);
   const orders = getOrdersForVendor(vendorId);
   const completedOrders = orders.filter(o => o.status === 'COMPLETED');
@@ -55,7 +53,6 @@ const VendorProfile = () => {
 
       <div className="max-w-7xl mx-auto px-6 pt-32 pb-20">
         <div className="flex flex-col md:flex-row gap-12">
-          {/* Profile Sidebar */}
           <div className="md:w-1/3 space-y-8">
             <div className="bg-white rounded-[56px] p-12 border border-gray-100 shadow-sm relative overflow-hidden text-center">
               <div className="relative inline-block mb-8">
@@ -76,7 +73,7 @@ const VendorProfile = () => {
               </div>
 
               <button
-                onClick={logout}
+                onClick={() => navigate('/')}
                 className="w-full flex items-center justify-center gap-3 py-4 text-red-500 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-red-50 rounded-2xl transition-all"
               >
                 <LogOut size={16} />
@@ -101,7 +98,6 @@ const VendorProfile = () => {
             </div>
           </div>
 
-          {/* Main Content */}
           <div className="md:w-2/3 space-y-8">
             <div className="bg-white rounded-[56px] p-10 md:p-14 border border-gray-100 shadow-sm">
               <div className="flex gap-4 mb-12 overflow-x-auto pb-4">

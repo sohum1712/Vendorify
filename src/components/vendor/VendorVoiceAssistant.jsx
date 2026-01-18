@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { Mic, Volume2, Settings, MessageCircle, Package, TrendingUp, CheckCircle, X } from 'lucide-react';
 import VoiceRecorder from '../common/VoiceRecorder';
-import { useAuth } from '../../context/AuthContext';
 import { useAppData } from '../../context/AppDataContext';
 
 const STORAGE_KEY = 'vendor_voice_messages';
@@ -12,7 +11,6 @@ const LANGUAGES = {
 };
 
 const VendorVoiceAssistant = memo(() => {
-  const { user } = useAuth();
   const { getOrdersForVendor } = useAppData();
   const [isOpen, setIsOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -21,10 +19,9 @@ const VendorVoiceAssistant = memo(() => {
   const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef(null);
 
-  const vendorId = 1; // Static for demo
+  const vendorId = 1;
   const orders = getOrdersForVendor(vendorId);
 
-  // Multi-language responses
   const responses = {
     en: {
       welcome: "Hello! I'm your vendor assistant. How can I help you today?",
@@ -110,7 +107,6 @@ const VendorVoiceAssistant = memo(() => {
     
     let response = currentResponses.error;
     
-    // Voice commands for vendors
     if (lowerTranscript.includes('show orders') || lowerTranscript.includes('orders')) {
       const newOrders = orders.filter(o => o.status === 'NEW');
       response = `${currentResponses.orderHelp} You have ${newOrders.length} new orders.`;
@@ -158,11 +154,8 @@ const VendorVoiceAssistant = memo(() => {
     setSelectedLanguage(savedLanguage);
   }, []);
 
-  if (!user || user.role !== 'vendor') return null;
-
   return (
     <div className="fixed bottom-4 right-4 z-50">
-      {/* Floating Voice Button - Always visible and more prominent */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
@@ -173,11 +166,9 @@ const VendorVoiceAssistant = memo(() => {
         </button>
       )}
 
-      {/* Voice Assistant Window */}
       {isOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-end justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto max-h-[80vh] flex flex-col">
-            {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <div className="flex items-center gap-3">
                 <Volume2 size={20} className="text-indigo-600" />
@@ -196,7 +187,6 @@ const VendorVoiceAssistant = memo(() => {
                 )}
               </div>
               
-              {/* Language Selector */}
               <div className="flex items-center gap-2">
                 <Settings size={16} className="text-gray-400" />
                 <select
@@ -220,7 +210,6 @@ const VendorVoiceAssistant = memo(() => {
               </button>
             </div>
 
-            {/* Voice Recorder */}
             <div className="p-4 border-b border-gray-200">
               <VoiceRecorder
                 onTranscript={handleVoiceCommand}
@@ -231,7 +220,6 @@ const VendorVoiceAssistant = memo(() => {
               />
             </div>
 
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {messages.map((message) => (
                 <div
@@ -256,7 +244,6 @@ const VendorVoiceAssistant = memo(() => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Actions */}
             <div className="p-4 border-t border-gray-200">
               <h4 className="font-medium text-gray-800 mb-3">Quick Actions</h4>
               <div className="grid grid-cols-2 gap-2">

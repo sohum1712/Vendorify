@@ -1,8 +1,7 @@
 // Vendor Dashboard Component
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { LogOut, Store, Package, TrendingUp, Star, Plus, Edit, MapPin, MessageCircle, Camera, ShieldCheck, ArrowUpRight, Utensils, Settings, Bell, DollarSign, Trash2, AlertTriangle } from 'lucide-react';
+import { Store, Package, TrendingUp, Star, Plus, Edit, MapPin, MessageCircle, Camera, ShieldCheck, ArrowUpRight, Utensils, Settings, Bell, DollarSign, Trash2, AlertTriangle, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppData } from '../context/AppDataContext';
 import VendorVoiceAssistant from '../components/vendor/VendorVoiceAssistant';
@@ -15,7 +14,6 @@ import { toast } from 'react-toastify';
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
   const {
     getOrdersForVendor,
     geoError,
@@ -35,7 +33,7 @@ const VendorDashboard = () => {
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  const vendorId = user?.vendorId || user?.id || 1;
+  const vendorId = 1;
   const orders = getOrdersForVendor(vendorId);
   const completedOrders = orders.filter(o => o.status === 'COMPLETED');
   const totalEarnings = completedOrders.reduce((sum, o) => sum + o.total, 0);
@@ -161,12 +159,12 @@ const VendorDashboard = () => {
                 )}
               </div>
               <button 
-                onClick={logout} 
-                className="p-4 text-gray-400 hover:text-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-[#CDF546] rounded-lg"
-                aria-label="Logout"
-              >
-                <LogOut size={24} />
-              </button>
+                  onClick={() => navigate('/')} 
+                  className="p-4 text-gray-400 hover:text-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-[#CDF546] rounded-lg"
+                  aria-label="Logout"
+                >
+                  <LogOut size={24} />
+                </button>
             </div>
         </div>
 

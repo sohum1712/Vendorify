@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback, memo } from 'react';
 import { MessageCircle, Send, X, Trash2, AlertTriangle } from 'lucide-react';
 import VoiceRecorder from '../common/VoiceRecorder';
-import { useAuth } from '../../context/AuthContext';
 import { AI_WELCOME_MSG } from '../../constants/roles';
 
 const STORAGE_KEY = 'vendorify_chat_messages';
@@ -94,7 +93,6 @@ const TypingIndicator = memo(() => {
 TypingIndicator.displayName = 'TypingIndicator';
 
 const ChatbotWidget = () => {
-  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
@@ -110,11 +108,7 @@ const ChatbotWidget = () => {
     return false;
   }, [messages, open]);
 
-  const visible = !!user;
-
   useEffect(() => {
-    if (!visible) return;
-
     const stored = readMessages();
     if (stored && stored.length) {
       setMessages(stored);
@@ -131,12 +125,11 @@ const ChatbotWidget = () => {
     ];
     setMessages(seeded);
     writeMessages(seeded);
-  }, [visible]);
+  }, []);
 
   useEffect(() => {
-    if (!visible) return;
     writeMessages(messages);
-  }, [messages, visible]);
+  }, [messages]);
 
   useEffect(() => {
     if (!open) return;
@@ -214,8 +207,6 @@ const ChatbotWidget = () => {
     },
     [sendMessage]
   );
-
-  if (!visible) return null;
 
   return (
     <div className="fixed bottom-5 right-5 z-50">

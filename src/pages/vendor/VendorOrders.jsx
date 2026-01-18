@@ -1,22 +1,16 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, XCircle, Clock, Package, MessageCircle, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../../context/AuthContext';
 import { useAppData } from '../../context/AppDataContext';
 import Navbar from '../../components/common/Navbar';
 import { Footer } from '../../components/common/Footer';
 
 const VendorOrders = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { getOrdersForVendor, updateOrderStatus } = useAppData();
 
-  const vendorId = useMemo(() => {
-    if (user && user.role === 'vendor' && user.vendorId) return user.vendorId;
-    return 1;
-  }, [user]);
-
+  const vendorId = 1;
   const orders = getOrdersForVendor(vendorId);
 
   const getStatusColor = (status) => {
