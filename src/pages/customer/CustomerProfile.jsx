@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppData } from '../../context/AppDataContext';
 import {
   User,
   MapPin,
