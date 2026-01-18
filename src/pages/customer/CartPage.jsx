@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Minus, MessageCircle, ShoppingBag, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, MessageCircle, ShoppingBag, ArrowRight, ShieldCheck, Clock, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppData } from '../../context/AppDataContext';
 import Navbar from '../../components/common/Navbar';
@@ -8,7 +8,7 @@ import { Footer } from '../../components/common/Footer';
 
 const CartPage = () => {
   const navigate = useNavigate();
-  const { cart, cartSummary, updateCartQty, placeOrder, getVendorById } = useAppData();
+  const { cart, cartSummary, updateCartQty, placeOrder, getVendorById, generateWhatsAppOrderLink } = useAppData();
   const [placing, setPlacing] = useState(false);
   const [lastOrder, setLastOrder] = useState(null);
 
@@ -29,6 +29,12 @@ const CartPage = () => {
     } finally {
       setPlacing(false);
     }
+  };
+
+  const handleWhatsAppOrder = () => {
+    if (!vendor || cart.length === 0) return;
+    const link = generateWhatsAppOrderLink(vendor.phone, cart, cartSummary.total, vendor.name);
+    window.open(link, '_blank');
   };
 
   const handleShareOnWhatsApp = (order) => {
@@ -77,10 +83,10 @@ const CartPage = () => {
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 onClick={() => handleShareOnWhatsApp(lastOrder)}
-                className="flex-1 bg-gray-900 text-white py-6 rounded-3xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-black transition-all"
+                className="flex-1 bg-green-600 text-white py-6 rounded-3xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-green-700 transition-all"
               >
                 <MessageCircle size={18} />
-                Share Order
+                Share on WhatsApp
               </button>
               <button
                 onClick={() => navigate('/customer/orders')}
@@ -117,11 +123,18 @@ const CartPage = () => {
                     <p className="font-black uppercase tracking-tight text-gray-900">{vendor?.name}</p>
                   </div>
                 </div>
-                {!vendor?.verified && (
-                  <span className="bg-red-50 text-red-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-100">
-                    Not Verified
-                  </span>
-                )}
+                <div className="flex items-center gap-3">
+                  {!vendor?.verified && (
+                    <span className="bg-red-50 text-red-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-100">
+                      Not Verified
+                    </span>
+                  )}
+                  {vendor?.schedule?.isRoaming && (
+                    <span className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-blue-100">
+                      Roaming
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -193,18 +206,33 @@ const CartPage = () => {
                   </p>
                 )}
 
-                <button 
-                  disabled={placing || !canPlaceOrder}
-                  onClick={handlePlaceOrder}
-                  className={`w-full py-6 rounded-[28px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
-                    canPlaceOrder 
-                      ? 'bg-[#CDF546] text-gray-900 hover:scale-105 shadow-xl shadow-[#CDF546]/20' 
-                      : 'bg-white/5 text-white/20 cursor-not-allowed'
-                  }`}
-                >
-                  {placing ? 'Processing...' : 'Place Order'}
-                  {!placing && <ArrowRight size={20} />}
-                </button>
+                <div className="space-y-3">
+                  <button 
+                    onClick={handleWhatsAppOrder}
+                    disabled={!canPlaceOrder}
+                    className={`w-full py-5 rounded-[24px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
+                      canPlaceOrder 
+                        ? 'bg-green-500 text-white hover:bg-green-600' 
+                        : 'bg-white/5 text-white/20 cursor-not-allowed'
+                    }`}
+                  >
+                    <MessageCircle size={20} />
+                    Order via WhatsApp
+                  </button>
+                  
+                  <button 
+                    disabled={placing || !canPlaceOrder}
+                    onClick={handlePlaceOrder}
+                    className={`w-full py-6 rounded-[28px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
+                      canPlaceOrder 
+                        ? 'bg-[#CDF546] text-gray-900 hover:scale-105 shadow-xl shadow-[#CDF546]/20' 
+                        : 'bg-white/5 text-white/20 cursor-not-allowed'
+                    }`}
+                  >
+                    {placing ? 'Processing...' : 'Place Order In-App'}
+                    {!placing && <ArrowRight size={20} />}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

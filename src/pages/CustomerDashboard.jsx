@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Home, Clock, User, Store, Utensils, Carrot, Coffee, ShoppingBag, Bell, Star, ShieldCheck, Heart, ArrowRight, Filter, X, MapPin, Package } from 'lucide-react';
+import { Search, Home, Clock, User, Store, Utensils, Carrot, Coffee, ShoppingBag, Bell, Star, ShieldCheck, Heart, ArrowRight, Filter, X, MapPin, Package, Tag, Navigation, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../constants/roles';
 import { useAppData } from '../context/AppDataContext';
@@ -17,10 +17,13 @@ const CustomerDashboard = () => {
   const [sortBy, setSortBy] = useState('distance');
   const [showOrderHistory, setShowOrderHistory] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showDeals, setShowDeals] = useState(false);
   const navigate = useNavigate();
-  const { vendors, userLocation, getOrdersForCustomer } = useAppData();
+  const { vendors, userLocation, getOrdersForCustomer, getCommunityDeals } = useAppData();
 
   const orders = getOrdersForCustomer();
+  const deals = getCommunityDeals();
+  
   const notifications = [
     { id: 1, text: 'Your order is on the way!', time: '5 min ago', unread: true },
     { id: 2, text: 'New vendor nearby: Fresh Juice Corner', time: '1 hour ago', unread: true },
@@ -52,6 +55,8 @@ const CustomerDashboard = () => {
     return matchesSearch && matchesCategory;
   });
 
+  const roamingVendors = vendors.filter(v => v.schedule?.isRoaming && v.verified);
+
   if (isLoading) {
     return <LoadingSpinner fullScreen />;
   }
@@ -60,7 +65,6 @@ const CustomerDashboard = () => {
     <div className="min-h-screen bg-[#FDF9DC] pb-24 font-sans selection:bg-[#CDF546] selection:text-gray-900">
       <Navbar role="customer" />
 
-        {/* Search & Header Section */}
         <div className="pt-32 pb-12 px-6">
           <div className="max-w-7xl mx-auto space-y-10">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -127,7 +131,6 @@ const CustomerDashboard = () => {
               </div>
             </div>
 
-          {/* Categories Grid - Elevated */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {CATEGORIES.map(category => {
               const IconComponent = iconMap[category.icon];
@@ -159,7 +162,90 @@ const CustomerDashboard = () => {
         </div>
       </div>
 
-        {/* Main Content: Bento Grid Vendors */}
+        {deals.length > 0 && (
+          <div className="max-w-7xl mx-auto px-6 pb-10">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#CDF546] rounded-2xl flex items-center justify-center">
+                  <Sparkles size={20} className="text-gray-900" />
+                </div>
+                <h2 className="text-xl font-heading font-black text-gray-900 uppercase tracking-tight">Today's Deals</h2>
+              </div>
+              <button 
+                onClick={() => setShowDeals(!showDeals)}
+                className="text-[#1A6950] font-black text-xs uppercase tracking-widest"
+              >
+                {showDeals ? 'Hide' : 'View All'}
+              </button>
+            </div>
+            
+            <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 ${showDeals ? '' : 'max-h-[200px] overflow-hidden'}`}>
+              {deals.map((deal, idx) => (
+                <motion.div
+                  key={deal.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  onClick={() => navigate(`/customer/vendor/${deal.vendorId}`)}
+                  className="bg-gradient-to-br from-[#1A6950] to-emerald-700 rounded-[24px] p-6 text-white cursor-pointer hover:scale-[1.02] transition-transform"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <Tag size={24} className="text-[#CDF546]" />
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black uppercase">
+                      {deal.vendorName}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-black uppercase mb-2">{deal.title}</h3>
+                  <p className="text-white/70 text-sm">{deal.description}</p>
+                  <p className="text-[10px] text-white/50 mt-3 uppercase tracking-widest">Valid until {deal.validUntil}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {roamingVendors.length > 0 && (
+          <div className="max-w-7xl mx-auto px-6 pb-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-blue-500 rounded-2xl flex items-center justify-center">
+                <Navigation size={20} className="text-white" />
+              </div>
+              <h2 className="text-xl font-heading font-black text-gray-900 uppercase tracking-tight">Roaming Near You</h2>
+            </div>
+            
+            <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6">
+              {roamingVendors.map((vendor) => (
+                <motion.div
+                  key={vendor.id}
+                  whileHover={{ y: -5 }}
+                  onClick={() => navigate(`/customer/vendor/${vendor.id}`)}
+                  className="flex-shrink-0 w-72 bg-white rounded-[24px] p-5 border border-gray-100 shadow-sm hover:shadow-xl cursor-pointer transition-all"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <img src={vendor.image} alt={vendor.name} className="w-14 h-14 rounded-2xl object-cover" />
+                    <div>
+                      <h3 className="font-black text-gray-900 uppercase text-sm">{vendor.name}</h3>
+                      <div className="flex items-center gap-1">
+                        <Star size={12} className="text-yellow-400 fill-yellow-400" />
+                        <span className="text-xs font-bold text-gray-500">{vendor.rating}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-blue-50 rounded-xl p-3">
+                    <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Current Location</p>
+                    <p className="font-bold text-gray-900 text-sm">{vendor.schedule?.currentStop}</p>
+                    {vendor.schedule?.nextStops?.[0] && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Next: {vendor.schedule.nextStops[0].location} @ {vendor.schedule.nextStops[0].time}
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="max-w-7xl mx-auto px-6 pb-20">
           <div className="flex items-baseline justify-between mb-10">
             <h2 className="text-2xl font-heading font-black text-gray-900 uppercase tracking-tight">Handpicked Vendors</h2>
@@ -232,10 +318,15 @@ const CustomerDashboard = () => {
 
                     <div className="absolute inset-0 p-8 flex flex-col justify-between text-white">
                       <div className="flex justify-between items-start">
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           {vendor.verified && (
                             <div className="bg-[#CDF546] text-gray-900 p-2 rounded-2xl shadow-xl">
                               <ShieldCheck size={20} />
+                            </div>
+                          )}
+                          {vendor.schedule?.isRoaming && (
+                            <div className="bg-blue-500 text-white p-2 rounded-2xl shadow-xl">
+                              <Navigation size={20} />
                             </div>
                           )}
                           <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/10">
@@ -268,7 +359,7 @@ const CustomerDashboard = () => {
 
                         <div className="flex items-center justify-between opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
                           <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/70 max-w-[200px] truncate">
-                            {typeof vendor.address === 'string' ? vendor.address : 'Roaming nearby'}
+                            {vendor.schedule?.currentStop || vendor.address}
                           </p>
                           <div className="bg-white text-gray-900 w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
                             <ArrowRight size={20} />
@@ -284,7 +375,6 @@ const CustomerDashboard = () => {
           )}
         </div>
 
-        {/* Mobile Bottom Navigation - Premium Glassmorphism */}
         <div className="md:hidden fixed bottom-6 left-6 right-6 h-20 bg-gray-900/90 backdrop-blur-2xl rounded-[32px] flex items-center justify-around px-8 shadow-2xl z-50 border border-white/10">
           <button 
             onClick={() => { setActiveTab('home'); setShowOrderHistory(false); setShowNotifications(false); }} 
@@ -337,7 +427,6 @@ const CustomerDashboard = () => {
           </button>
         </div>
 
-        {/* Order History Modal */}
         <AnimatePresence>
           {showOrderHistory && (
             <motion.div
@@ -375,7 +464,6 @@ const CustomerDashboard = () => {
           )}
         </AnimatePresence>
 
-        {/* Notifications Modal */}
         <AnimatePresence>
           {showNotifications && (
             <motion.div
