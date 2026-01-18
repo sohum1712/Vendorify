@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { ArrowRight, Lock, Mail, Phone, ShoppingBag, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, Lock, Mail, Phone, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 
 const CustomerLogin = () => {
-  const navigate = useNavigate();
   const { login } = useAuth();
   const [form, setForm] = useState({ mobile: '', email: '', password: '' });
   const [loading, setLoading] = useState(false);

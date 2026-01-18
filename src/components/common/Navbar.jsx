@@ -53,9 +53,9 @@ export default function Navbar({ role = "landing" }) {
 
   return (
     <nav className="fixed top-2 z-50 w-full flex justify-center px-4 md:px-0 transition-all duration-300">
-      <div className={`bg-white/95 backdrop-blur-xl px-6 md:px-12 py-4 flex items-center justify-between w-full max-w-7xl rounded-b-3xl shadow-lg border border-gray-100 ${
-        isScrolled ? 'ring-1 ring-gray-200/50 scale-[1.02]' : ''
-      }`}>
+        <div className={`bg-white/95 backdrop-blur-xl px-4 md:px-8 lg:px-12 py-4 flex items-center justify-between gap-4 w-full max-w-7xl rounded-b-3xl shadow-lg border border-gray-100 ${
+          isScrolled ? 'ring-1 ring-gray-200/50 scale-[1.02]' : ''
+        }`}>
         
           {/* Logo - Left on desktop */}
           <Link to="/" className="flex items-center gap-2 flex-shrink-0" aria-label="Vendorify Home">
@@ -68,7 +68,7 @@ export default function Navbar({ role = "landing" }) {
           </Link>
 
           {/* Center Links */}
-          <div className="hidden lg:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
+          <div className="hidden lg:flex items-center gap-6">
             {role === 'landing' && (
               <div className="relative group">
                 <button 
@@ -111,7 +111,7 @@ export default function Navbar({ role = "landing" }) {
           </div>
 
         {/* Right Actions */}
-        <div className="hidden md:flex items-center gap-6 flex-1 justify-end">
+        <div className="hidden md:flex items-center gap-4 lg:gap-6 flex-shrink-0">
           {role === 'landing' ? (
             <>
               <Link to="/login/customer" className="text-gray-800 hover:text-emerald-700 transition-colors font-bold text-sm uppercase tracking-wider">

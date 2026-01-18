@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Store, Package, TrendingUp, Star, Plus, Edit, MapPin, MessageCircle, Camera, ShieldCheck, ArrowUpRight, Utensils, Settings, Bell, DollarSign, Trash2, AlertTriangle, X } from 'lucide-react';
+import { LogOut, Store, Package, TrendingUp, Star, Plus, Edit, MapPin, MessageCircle, Camera, ShieldCheck, ArrowUpRight, Utensils, Settings, Bell, DollarSign, Trash2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppData } from '../context/AppDataContext';
 import VendorVoiceAssistant from '../components/vendor/VendorVoiceAssistant';
@@ -32,7 +32,6 @@ const VendorDashboard = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showProductSettings, setShowProductSettings] = useState(null);
 
   const vendorId = user?.vendorId || user?.id || 1;
   const orders = getOrdersForVendor(vendorId);
@@ -322,34 +321,43 @@ const VendorDashboard = () => {
           </div>
 
           {/* Side Panel: AI & Voice */}
-          <div className="lg:col-span-4 space-y-8">
-            <motion.div
-              whileHover={{ y: -5 }}
-              className="bg-[#1A6950] rounded-[56px] p-12 text-white shadow-2xl relative overflow-hidden cursor-pointer"
-            >
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
-              <div className="relative z-10">
-                <div className="w-20 h-20 bg-[#CDF546] rounded-[28px] flex items-center justify-center mb-8 shadow-xl rotate-12 group-hover:rotate-0 transition-transform">
-                  <MessageCircle size={36} className="text-gray-900" />
-                </div>
-                <h3 className="text-3xl font-heading font-black uppercase mb-4 leading-none">
-                  Voice <br /> Control
-                </h3>
-                <p className="text-white/60 text-sm font-medium mb-10 leading-relaxed">
-                  Say "Turn off orders" or "What's my total?" to interact with Vendorify AI.
-                </p>
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
-                    <motion.div
-                      animate={{ x: ['-100%', '100%'] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                      className="w-1/2 h-full bg-[#CDF546]"
-                    />
+            <div className="lg:col-span-4 space-y-8">
+              <motion.div
+                whileHover={{ y: -5 }}
+                className="bg-[#1A6950] rounded-[56px] p-12 text-white shadow-2xl relative overflow-hidden cursor-pointer"
+              >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
+                <div className="relative z-10">
+                  <div className="w-20 h-20 bg-[#CDF546] rounded-[28px] flex items-center justify-center mb-8 shadow-xl rotate-12 group-hover:rotate-0 transition-transform">
+                    <MessageCircle size={36} className="text-gray-900" />
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#CDF546]">Listening</span>
+                  <h3 className="text-3xl font-heading font-black uppercase mb-4 leading-none">
+                    Voice <br /> Control
+                  </h3>
+                  <p className="text-white/60 text-sm font-medium mb-10 leading-relaxed">
+                    Say "Turn off orders" or "What's my total?" to interact with Vendorify AI.
+                  </p>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden">
+                      {isVoiceActive ? (
+                        <motion.div
+                          animate={{ x: ['-100%', '100%'] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                          className="w-1/2 h-full bg-[#CDF546]"
+                        />
+                      ) : (
+                        <div className="w-0 h-full bg-[#CDF546]" />
+                      )}
+                    </div>
+                    <button 
+                      onClick={() => setIsVoiceActive(!isVoiceActive)}
+                      className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white ${isVoiceActive ? 'text-[#CDF546] bg-white/10' : 'text-white/40 hover:text-[#CDF546]'}`}
+                    >
+                      {isVoiceActive ? 'Listening' : 'Start'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
 
             <div className="bg-white rounded-[56px] p-12 shadow-sm border border-gray-100">
               <h3 className="text-xl font-heading font-black text-gray-900 uppercase mb-8 tracking-tight">Daily Progress</h3>

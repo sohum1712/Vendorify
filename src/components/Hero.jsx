@@ -54,20 +54,32 @@ export default function Hero({ onContinueCustomer, onContinueVendor }) {
             </div>
 
             <div className="flex flex-wrap gap-4 mt-auto">
-              <button className="flex items-center gap-3 px-5 py-2.5 rounded-2xl border-2 border-gray-100 hover:border-gray-200 transition-colors bg-white shadow-sm">
+              <a 
+                href="https://apps.apple.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-5 py-2.5 rounded-2xl border-2 border-gray-100 hover:border-gray-200 transition-colors bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#CDF546]"
+                aria-label="Download on the App Store"
+              >
                 <Apple className="h-5 w-5 fill-current" />
                 <div className="text-left">
                   <div className="text-[10px] uppercase font-bold text-gray-400 leading-none">Download on the</div>
                   <div className="text-sm font-bold text-gray-900 leading-tight">App Store</div>
                 </div>
-              </button>
-              <button className="flex items-center gap-3 px-5 py-2.5 rounded-2xl border-2 border-gray-100 hover:border-gray-200 transition-colors bg-white shadow-sm">
+              </a>
+              <a 
+                href="https://play.google.com/store" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-5 py-2.5 rounded-2xl border-2 border-gray-100 hover:border-gray-200 transition-colors bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#CDF546]"
+                aria-label="Get it on Google Play"
+              >
                 <Play className="h-5 w-5 fill-current" />
                 <div className="text-left">
                   <div className="text-[10px] uppercase font-bold text-gray-400 leading-none">Get it on</div>
                   <div className="text-sm font-bold text-gray-900 leading-tight">Google Play</div>
                 </div>
-              </button>
+              </a>
             </div>
           </div>
         </motion.div>

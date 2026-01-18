@@ -368,3 +368,40 @@ body {
 .Toastify__toast--info {
   @apply bg-blue-500 text-white;
 }
+
+/* Focus Visible States for Accessibility */
+*:focus-visible {
+  outline: 2px solid #CDF546;
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #CDF546;
+  outline-offset: 2px;
+}
+
+/* Improved Color Contrast */
+.text-gray-400 {
+  color: #6B7280;
+}
+
+.text-gray-300 {
+  color: #9CA3AF;
+}
+
+/* Touch States for Mobile */
+@media (hover: none) and (pointer: coarse) {
+  .active\:scale-\[0\.98\]:active {
+    transform: scale(0.98);
+  }
+  
+  button:active,
+  a:active {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+}

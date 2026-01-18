@@ -1,8 +1,10 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { ArrowUpRight } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowUpRight, Twitter, Linkedin, Facebook, Instagram } from "lucide-react";
 
 export function Footer() {
+  const navigate = useNavigate();
+
   return (
     <footer className="px-6 py-20 bg-[#01583F] rounded-t-[48px] text-white">
       <div className="mx-auto max-w-7xl">
@@ -16,7 +18,10 @@ export function Footer() {
               Ready to verify your <br />
               <span className="text-white">Vendor Network?</span>
             </h2>
-            <button className="bg-[#01583F] text-white px-12 py-6 rounded-3xl font-bold uppercase tracking-widest text-lg flex items-center gap-3 hover:shadow-2xl transition-all">
+            <button 
+              onClick={() => navigate('/signup/vendor')}
+              className="bg-[#01583F] text-white px-12 py-6 rounded-3xl font-bold uppercase tracking-widest text-lg flex items-center gap-3 hover:shadow-2xl transition-all focus:outline-none focus:ring-2 focus:ring-white"
+            >
               Get Started Now
               <ArrowUpRight className="h-6 w-6" />
             </button>
@@ -38,11 +43,42 @@ export function Footer() {
               The world's most trusted vendor verification and compliance monitoring platform.
             </p>
             <div className="flex gap-4">
-              {['𝕏', 'in', 'fb', 'ig'].map((social, i) => (
-                <div key={i} className="w-10 h-10 rounded-full border border-teal-500/30 flex items-center justify-center font-bold text-[#CDF546] hover:bg-[#CDF546] hover:text-[#01583F] transition-all cursor-pointer">
-                  {social}
-                </div>
-              ))}
+              <a 
+                href="https://twitter.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-full border border-teal-500/30 flex items-center justify-center text-[#CDF546] hover:bg-[#CDF546] hover:text-[#01583F] transition-all focus:outline-none focus:ring-2 focus:ring-[#CDF546]"
+                aria-label="Twitter"
+              >
+                <Twitter size={18} />
+              </a>
+              <a 
+                href="https://linkedin.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-full border border-teal-500/30 flex items-center justify-center text-[#CDF546] hover:bg-[#CDF546] hover:text-[#01583F] transition-all focus:outline-none focus:ring-2 focus:ring-[#CDF546]"
+                aria-label="LinkedIn"
+              >
+                <Linkedin size={18} />
+              </a>
+              <a 
+                href="https://facebook.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-full border border-teal-500/30 flex items-center justify-center text-[#CDF546] hover:bg-[#CDF546] hover:text-[#01583F] transition-all focus:outline-none focus:ring-2 focus:ring-[#CDF546]"
+                aria-label="Facebook"
+              >
+                <Facebook size={18} />
+              </a>
+              <a 
+                href="https://instagram.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-full border border-teal-500/30 flex items-center justify-center text-[#CDF546] hover:bg-[#CDF546] hover:text-[#01583F] transition-all focus:outline-none focus:ring-2 focus:ring-[#CDF546]"
+                aria-label="Instagram"
+              >
+                <Instagram size={18} />
+              </a>
             </div>
           </div>
 

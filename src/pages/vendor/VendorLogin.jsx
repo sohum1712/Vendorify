@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ArrowRight, Lock, Phone, ShieldCheck, Shield, ShoppingBag, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 
 const VendorLogin = () => {
-  const navigate = useNavigate();
   const { login } = useAuth();
   const [form, setForm] = useState({ mobile: '', password: '', aadhaar: '' });
   const [loading, setLoading] = useState(false);

@@ -107,7 +107,6 @@ export const AppDataProvider = ({ children }) => {
     }
 
     socket.on('vendor_location_update', (data) => {
-      console.log("Location Update:", data);
       updateVendorLocation(data.vendorId, { lat: data.lat, lng: data.lng });
     });
 
