@@ -89,7 +89,7 @@ export const AppDataProvider = ({ children }) => {
         }
 
       } catch (err) {
-        // Error fetching data - silently fail
+        console.error("Error fetching data:", err);
       }
     };
 
@@ -106,9 +106,10 @@ export const AppDataProvider = ({ children }) => {
       socket.emit('join_vendor_room', user.vendorId || 1);
     }
 
-      socket.on('vendor_location_update', (data) => {
-        updateVendorLocation(data.vendorId, { lat: data.lat, lng: data.lng });
-      });
+    socket.on('vendor_location_update', (data) => {
+      console.log("Location Update:", data);
+      updateVendorLocation(data.vendorId, { lat: data.lat, lng: data.lng });
+    });
 
     return () => {
       socket.off('vendor_location_update');
@@ -234,9 +235,9 @@ export const AppDataProvider = ({ children }) => {
       const newProduct = await res.json();
       setProducts(prev => [...prev, newProduct]);
       return newProduct;
-      } catch (err) {
-        // Error adding product
-      }
+    } catch (err) {
+      console.error("Add Product Error:", err);
+    }
   };
 
   const updateProduct = (id, updates) => {
@@ -252,9 +253,9 @@ export const AppDataProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProducts(prev => prev.filter(p => p._id !== id)); // MongoDB uses _id
-      } catch (err) {
-        // Error deleting product
-      }
+    } catch (err) {
+      console.error("Delete Product Error:", err);
+    }
   };
 
   const updateVendorDetails = async (updates) => {

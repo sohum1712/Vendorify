@@ -1,40 +1,20 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Home, Clock, User, Store, Utensils, Carrot, Coffee, ShoppingBag, Bell, Star, ShieldCheck, Heart, ArrowRight, Filter, X, MapPin, Package } from 'lucide-react';
+import { Search, Home, Clock, User, Store, Utensils, Carrot, Coffee, ShoppingBag, Bell, Star, ShieldCheck, Heart, ArrowRight, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../constants/roles';
 import { useAppData } from '../context/AppDataContext';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Navbar from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
-import { toast } from 'react-toastify';
 
 const CustomerDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
-  const [showFilter, setShowFilter] = useState(false);
-  const [sortBy, setSortBy] = useState('distance');
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showOrders, setShowOrders] = useState(false);
   const navigate = useNavigate();
-  const { vendors, userLocation, getOrdersForCustomer } = useAppData();
-  
-  const orders = getOrdersForCustomer ? getOrdersForCustomer() : [];
-  
-  const getLocationText = () => {
-    if (userLocation) {
-      return `${userLocation.lat.toFixed(4)}°N, ${userLocation.lng.toFixed(4)}°E`;
-    }
-    return 'Detecting location...';
-  };
-  
-  const notifications = [
-    { id: 1, text: 'Your order is being prepared', time: '2 min ago', unread: true },
-    { id: 2, text: 'New vendor nearby: Fresh Fruits', time: '10 min ago', unread: true },
-    { id: 3, text: 'Rate your last order', time: '1 hour ago', unread: false },
-  ];
+  const { vendors } = useAppData();
 
   const iconMap = {
     Store,
@@ -62,74 +42,34 @@ const CustomerDashboard = () => {
       {/* Search & Header Section */}
       <div className="pt-32 pb-12 px-6">
         <div className="max-w-7xl mx-auto space-y-10">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-              <div className="space-y-2">
-                <p className="text-[#1A6950] font-black text-[12px] uppercase tracking-[0.3em] flex items-center gap-2">
-                  <MapPin size={14} />
-                  {getLocationText()}
-                </p>
-                <h1 className="text-4xl md:text-6xl font-heading font-black text-gray-900 uppercase leading-[0.9] tracking-tighter">
-                  Discover <br />
-                  <span className="text-white bg-[#1A6950] px-4 py-1 rounded-[20px] inline-block mt-2">Vendors</span>
-                </h1>
-              </div>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-2">
+              <p className="text-[#1A6950] font-black text-[12px] uppercase tracking-[0.3em]">Near MG Road, Bengaluru</p>
+              <h1 className="text-4xl md:text-6xl font-heading font-black text-gray-900 uppercase leading-[0.9] tracking-tighter">
+                Discover <br />
+                <span className="text-white bg-[#1A6950] px-4 py-1 rounded-[20px] inline-block mt-2">Vendors</span>
+              </h1>
+            </div>
 
-              <div className="relative group w-full md:max-w-md">
-                <div className="absolute inset-0 bg-[#CDF546] rounded-[32px] blur-2xl opacity-20 group-focus-within:opacity-40 transition-opacity" />
-                <div className="relative bg-white border border-gray-100 rounded-[32px] p-2 flex items-center gap-2 shadow-xl">
-                  <div className="flex-1 flex items-center pl-6 gap-3">
-                    <Search className="text-gray-400" size={20} />
-                    <input
-                      type="text"
-                      placeholder="Search 'Masala Dosa'..."
-                      className="w-full bg-transparent border-none py-4 text-gray-900 font-bold placeholder:text-gray-300 focus:ring-0 outline-none"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      aria-label="Search vendors"
-                    />
-                  </div>
-                  <button 
-                    onClick={() => setShowFilter(!showFilter)}
-                    className="bg-gray-900 text-white p-4 rounded-3xl hover:bg-black transition-all focus:outline-none focus:ring-2 focus:ring-[#CDF546]"
-                    aria-label="Filter options"
-                  >
-                    <Filter size={20} />
-                  </button>
+            <div className="relative group w-full md:max-w-md">
+              <div className="absolute inset-0 bg-[#CDF546] rounded-[32px] blur-2xl opacity-20 group-focus-within:opacity-40 transition-opacity" />
+              <div className="relative bg-white border border-gray-100 rounded-[32px] p-2 flex items-center gap-2 shadow-xl">
+                <div className="flex-1 flex items-center pl-6 gap-3">
+                  <Search className="text-gray-400" size={20} />
+                  <input
+                    type="text"
+                    placeholder="Search 'Masala Dosa'..."
+                    className="w-full bg-transparent border-none py-4 text-gray-900 font-bold placeholder:text-gray-300 focus:ring-0 outline-none"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
-                
-                {showFilter && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="absolute right-0 top-full mt-2 w-64 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden z-50 p-4"
-                  >
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="font-black text-sm uppercase tracking-widest">Sort By</h4>
-                      <button onClick={() => setShowFilter(false)} className="text-gray-400 hover:text-gray-900">
-                        <X size={18} />
-                      </button>
-                    </div>
-                    <div className="space-y-2">
-                      {[
-                        { id: 'distance', label: 'Distance' },
-                        { id: 'rating', label: 'Rating' },
-                        { id: 'popular', label: 'Most Popular' },
-                      ].map(option => (
-                        <button
-                          key={option.id}
-                          onClick={() => { setSortBy(option.id); setShowFilter(false); toast.success(`Sorted by ${option.label}`); }}
-                          className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-colors ${
-                            sortBy === option.id ? 'bg-[#CDF546] text-gray-900' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                          }`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
+                <button className="bg-gray-900 text-white p-4 rounded-3xl hover:bg-black transition-all">
+                  <Filter size={20} />
+                </button>
               </div>
             </div>
+          </div>
 
           {/* Categories Grid - Elevated */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -178,26 +118,8 @@ const CustomerDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            <AnimatePresence mode="popLayout">
-              {filteredVendors.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="col-span-full flex flex-col items-center justify-center py-20 text-center"
-                >
-                  <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-                    <Store size={40} className="text-gray-300" />
-                  </div>
-                  <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-2">No Vendors Found</h3>
-                  <p className="text-gray-500 mb-6 max-w-sm">We couldn't find any vendors matching "{searchQuery || selectedCategory}". Try a different search or category.</p>
-                  <button
-                    onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}
-                    className="bg-[#1A6950] text-white px-6 py-3 rounded-2xl font-bold uppercase tracking-widest text-sm hover:bg-[#145a44] transition-colors"
-                  >
-                    Clear Filters
-                  </button>
-                </motion.div>
-              ) : filteredVendors.map((vendor, idx) => {
+          <AnimatePresence mode="popLayout">
+            {filteredVendors.map((vendor, idx) => {
               // Bento Logic: idx 0 is Hero, idx 1 is Wide, others standard
               const isHero = idx === 0;
               const isWide = idx === 1 || idx === 5;
@@ -273,76 +195,29 @@ const CustomerDashboard = () => {
         </div>
       </div>
 
-        {/* Mobile Bottom Navigation - Premium Glassmorphism */}
-        <div className="md:hidden fixed bottom-6 left-6 right-6 h-20 bg-gray-900/90 backdrop-blur-2xl rounded-[32px] flex items-center justify-around px-8 shadow-2xl z-50 border border-white/10">
-          <button 
-            onClick={() => setActiveTab('home')} 
-            className={`relative p-3 rounded-2xl transition-all focus:outline-none ${activeTab === 'home' ? 'text-[#CDF546]' : 'text-white/40'}`}
-            aria-label="Home"
-          >
-            <Home size={24} />
-            {activeTab === 'home' && <motion.div layoutId="activeTab" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#CDF546] rounded-full" />}
-          </button>
-          <button 
-            onClick={() => { setShowOrders(!showOrders); setActiveTab('orders'); toast.info('Showing your recent orders'); }}
-            className={`relative p-3 rounded-2xl transition-all focus:outline-none ${activeTab === 'orders' ? 'text-[#CDF546]' : 'text-white/40'}`}
-            aria-label="Order History"
-          >
-            <Clock size={24} />
-            {orders.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#CDF546] text-gray-900 text-[10px] font-bold rounded-full flex items-center justify-center">{orders.length}</span>
-            )}
-          </button>
-          <div className="relative -mt-12">
-            <div className="absolute inset-0 bg-[#CDF546] rounded-full blur-xl opacity-40 animate-pulse" />
-            <button 
-              onClick={() => navigate('/customer/cart')}
-              className="relative w-16 h-16 bg-[#1A6950] rounded-full flex items-center justify-center text-[#CDF546] shadow-2xl border-4 border-[#FDF9DC] focus:outline-none focus:ring-2 focus:ring-[#CDF546]"
-              aria-label="Go to Cart"
-            >
-              <ShoppingBag size={28} />
-            </button>
+      {/* Mobile Bottom Navigation - Premium Glassmorphism */}
+      <div className="md:hidden fixed bottom-6 left-6 right-6 h-20 bg-gray-900/90 backdrop-blur-2xl rounded-[32px] flex items-center justify-around px-8 shadow-2xl z-50 border border-white/10">
+        <button onClick={() => setActiveTab('home')} className={`relative p-3 rounded-2xl transition-all ${activeTab === 'home' ? 'text-[#CDF546]' : 'text-white/40'}`}>
+          <Home size={24} />
+          {activeTab === 'home' && <motion.div layoutId="activeTab" className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#CDF546] rounded-full" />}
+        </button>
+        <button className="p-3 rounded-2xl text-white/40">
+          <Clock size={24} />
+        </button>
+        <div className="relative -mt-12">
+          <div className="absolute inset-0 bg-[#CDF546] rounded-full blur-xl opacity-40 animate-pulse" />
+          <div className="relative w-16 h-16 bg-[#1A6950] rounded-full flex items-center justify-center text-[#CDF546] shadow-2xl border-4 border-[#FDF9DC]">
+            <Search size={28} />
           </div>
-          <div className="relative">
-            <button 
-              onClick={() => { setShowNotifications(!showNotifications); setActiveTab('notifications'); }}
-              className={`p-3 rounded-2xl transition-all focus:outline-none ${activeTab === 'notifications' ? 'text-[#CDF546]' : 'text-white/40'}`}
-              aria-label="Notifications"
-            >
-              <Bell size={24} />
-              {notifications.filter(n => n.unread).length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{notifications.filter(n => n.unread).length}</span>
-              )}
-            </button>
-            {showNotifications && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="absolute bottom-full mb-2 right-0 w-72 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden"
-              >
-                <div className="p-4 border-b border-gray-100">
-                  <h4 className="font-black text-sm uppercase tracking-widest text-gray-900">Notifications</h4>
-                </div>
-                <div className="max-h-64 overflow-y-auto">
-                  {notifications.map(n => (
-                    <div key={n.id} className={`p-4 border-b border-gray-50 ${n.unread ? 'bg-[#CDF546]/10' : ''}`}>
-                      <p className="font-bold text-sm text-gray-900">{n.text}</p>
-                      <p className="text-xs text-gray-400 mt-1">{n.time}</p>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </div>
-          <button 
-            onClick={() => navigate('/customer/profile')} 
-            className={`p-3 rounded-2xl transition-all focus:outline-none ${activeTab === 'profile' ? 'text-[#CDF546]' : 'text-white/40'}`}
-            aria-label="Profile"
-          >
-            <User size={24} />
-          </button>
         </div>
-        <Footer />
+        <button className="p-3 rounded-2xl text-white/40">
+          <Bell size={24} />
+        </button>
+        <button onClick={() => navigate('/customer/profile')} className="p-3 rounded-2xl text-white/40">
+          <User size={24} />
+        </button>
+      </div>
+      <Footer />
     </div>
   );
 };

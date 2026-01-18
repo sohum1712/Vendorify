@@ -68,7 +68,7 @@ export default function Navbar({ role = "landing" }) {
           </Link>
 
           {/* Center Links */}
-          <div className="hidden lg:flex items-center gap-6">
+          <div className="hidden lg:flex items-center gap-6 absolute left-1/2 -translate-x-1/2">
             {role === 'landing' && (
               <div className="relative group">
                 <button 
