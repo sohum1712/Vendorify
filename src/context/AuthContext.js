@@ -5,8 +5,13 @@ import { ROLES } from '../constants/roles';
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState({
+    id: 'guest',
+    name: 'Guest User',
+    email: 'guest@example.com',
+    role: ROLES.CUSTOMER
+  });
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   // Check for existing session on initial load
@@ -15,81 +20,54 @@ export const AuthProvider = ({ children }) => {
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
-    setLoading(false);
   }, []);
 
   const register = async (userData) => {
-    try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
+    const newUser = { ...userData, id: Date.now().toString() };
+    setUser(newUser);
+    localStorage.setItem('vendorify_user', JSON.stringify(newUser));
+    
+    const redirectPath =
+      newUser.role === ROLES.ADMIN ? '/admin' :
+        newUser.role === ROLES.VENDOR ? '/vendor' :
+          '/customer';
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      setUser(data);
-      localStorage.setItem('vendorify_user', JSON.stringify(data));
-
-      // Redirect based on role
-      const redirectPath =
-        data.role === ROLES.ADMIN ? '/admin' :
-          data.role === ROLES.VENDOR ? '/vendor' :
-            '/customer';
-
-      navigate(redirectPath);
-      return { success: true };
-    } catch (error) {
-      return { success: false, message: error.message };
-    }
+    navigate(redirectPath);
+    return { success: true };
   };
 
-    const login = async (arg1, arg2) => {
-      try {
-        let credentials = {};
-        if (typeof arg1 === 'object') {
-          credentials = arg1;
-        } else {
-          credentials = { email: arg1, password: arg2 };
-        }
-
-        const response = await fetch('http://localhost:5000/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(credentials),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Login failed');
-        }
-
-        setUser(data);
-        localStorage.setItem('vendorify_user', JSON.stringify(data));
-
-        const redirectPath =
-          data.role === ROLES.ADMIN ? '/admin' :
-            data.role === ROLES.VENDOR ? '/vendor' :
-              '/customer';
-
-        navigate(redirectPath);
-        return { success: true };
-      } catch (error) {
-        return { success: false, message: error.message };
-      }
+  const login = async (arg1, arg2) => {
+    let role = ROLES.CUSTOMER;
+    if (typeof arg1 === 'object') {
+      role = arg1.role || ROLES.CUSTOMER;
+    }
+    
+    const mockUser = {
+      id: 'mock-id',
+      name: 'Mock User',
+      email: 'mock@example.com',
+      role: role
     };
 
+    setUser(mockUser);
+    localStorage.setItem('vendorify_user', JSON.stringify(mockUser));
+
+    const redirectPath =
+      role === ROLES.ADMIN ? '/admin' :
+        role === ROLES.VENDOR ? '/vendor' :
+          '/customer';
+
+    navigate(redirectPath);
+    return { success: true };
+  };
+
   const logout = () => {
-    setUser(null);
+    setUser({
+      id: 'guest',
+      name: 'Guest User',
+      email: 'guest@example.com',
+      role: ROLES.CUSTOMER
+    });
     localStorage.removeItem('vendorify_user');
     navigate('/');
   };

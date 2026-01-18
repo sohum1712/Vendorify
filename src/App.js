@@ -32,8 +32,6 @@ import AdminLayout from './pages/admin/AdminLayout';
 import AdminVendors from './pages/admin/AdminVendors';
 
 import ConditionalChatbot from './components/chat/ConditionalChatbot';
-import ProtectedRoute from './components/common/ProtectedRoute.jsx';
-import { ROLES } from './constants/roles';
 
 function App() {
   return (
@@ -60,7 +58,7 @@ function App() {
             <Route path="/privacy" element={<InfoPage page="privacy" />} />
             <Route path="/customers" element={<InfoPage page="customers" />} />
             
-            <Route element={<ProtectedRoute allowedRoles={[ROLES.CUSTOMER]} />}>
+              {/* Customer Routes (Open) */}
               <Route path="/customer" element={<CustomerLayout />}>
                 <Route index element={<CustomerDashboard />} />
                 <Route path="vendor/:vendorId" element={<VendorDetails />} />
@@ -69,22 +67,19 @@ function App() {
                 <Route path="map" element={<MapPage />} />
                 <Route path="profile" element={<CustomerProfile />} />
               </Route>
-            </Route>
 
-            <Route element={<ProtectedRoute allowedRoles={[ROLES.VENDOR]} />}>
+              {/* Vendor Routes (Open) */}
               <Route path="/vendor" element={<VendorLayout />}>
                 <Route index element={<VendorDashboard />} />
                 <Route path="orders" element={<VendorOrders />} />
                 <Route path="profile" element={<VendorProfile />} />
               </Route>
-            </Route>
 
-            <Route element={<ProtectedRoute allowedRoles={[ROLES.ADMIN]} />}>
+              {/* Admin Routes (Open) */}
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="vendors" element={<AdminVendors />} />
               </Route>
-            </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

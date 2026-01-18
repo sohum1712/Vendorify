@@ -112,20 +112,23 @@ export default function Navbar({ role = "landing" }) {
 
         {/* Right Actions */}
         <div className="hidden md:flex items-center gap-4 lg:gap-6 flex-shrink-0">
-          {role === 'landing' ? (
-            <>
-              <Link to="/login/customer" className="text-gray-800 hover:text-emerald-700 transition-colors font-bold text-sm uppercase tracking-wider">
-                Sign in
-              </Link>
-              <button 
-                onClick={() => navigate('/login/vendor')}
-                className="bg-[#CDF546] hover:bg-[#b8dd3e] text-gray-900 px-8 py-3 rounded-full font-bold text-sm flex items-center gap-2 uppercase tracking-wider shadow-lg hover:shadow-xl transition-all"
-              >
-                See a demo
-                <ArrowRight className="h-4 w-4" />
-              </button>
-            </>
-          ) : (
+            {role === 'landing' ? (
+              <>
+                <button 
+                  onClick={() => navigate('/customer')}
+                  className="text-gray-800 hover:text-emerald-700 transition-colors font-bold text-sm uppercase tracking-wider"
+                >
+                  Customer Dashboard
+                </button>
+                <button 
+                  onClick={() => navigate('/vendor')}
+                  className="bg-[#CDF546] hover:bg-[#b8dd3e] text-gray-900 px-8 py-3 rounded-full font-bold text-sm flex items-center gap-2 uppercase tracking-wider shadow-lg hover:shadow-xl transition-all"
+                >
+                  Vendor Dashboard
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </>
+            ) : (
             <div className="flex items-center gap-4">
               <button className="p-2.5 text-gray-400 hover:text-emerald-700 hover:bg-gray-100 rounded-lg transition-all">
                 <Bell size={20} />

@@ -11,9 +11,9 @@ const LandingPage = () => {
 
   const handleContinue = (role) => {
     if (role === ROLES.CUSTOMER) {
-      navigate('/login/customer');
+      navigate('/customer');
     } else if (role === ROLES.VENDOR) {
-      navigate('/login/vendor');
+      navigate('/vendor');
     }
   };
 
