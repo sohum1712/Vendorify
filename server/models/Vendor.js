@@ -1,10 +1,27 @@
 const mongoose = require('mongoose');
 
+const scheduleStopSchema = new mongoose.Schema({
+    location: String,
+    time: String,
+    coordinates: {
+        type: { type: String, default: 'Point' },
+        coordinates: [Number]
+    }
+}, { _id: false });
+
+const dealSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    description: String,
+    discountPercent: Number,
+    validUntil: Date,
+    isActive: { type: Boolean, default: true }
+}, { timestamps: true });
+
 const vendorSchema = new mongoose.Schema({
     userId: {
         type: String,
         required: true,
-        unique: true, // Links to Auth User (e.g., Clerk/Supabase ID)
+        unique: true,
     },
     shopName: {
         type: String,
@@ -16,13 +33,14 @@ const vendorSchema = new mongoose.Schema({
     address: String,
     location: {
         type: { type: String, default: 'Point' },
-        coordinates: [Number], // [lng, lat]
+        coordinates: [Number],
     },
-    image: String, // Shop image URL
+    image: String,
+    gallery: [String],
     category: {
         type: String,
-        enum: ['food', 'grocery', 'fashion', 'electronics', 'other'],
-        default: 'other',
+        enum: ['food', 'beverages', 'fruits', 'grocery', 'fashion', 'electronics', 'services', 'other'],
+        default: 'food',
     },
     rating: {
         type: Number,
@@ -36,13 +54,27 @@ const vendorSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
+    isVerified: {
+        type: Boolean,
+        default: false,
+    },
+    schedule: {
+        isRoaming: { type: Boolean, default: false },
+        currentStop: String,
+        nextStops: [scheduleStopSchema],
+        operatingHours: { type: String, default: '10:00 AM - 9:00 PM' }
+    },
+    deals: [dealSchema],
+    lastLocationUpdate: Date,
     createdAt: {
         type: Date,
         default: Date.now,
     },
 });
 
-// Index for Geospatial queries (finding vendors nearby)
 vendorSchema.index({ location: '2dsphere' });
+vendorSchema.index({ category: 1 });
+vendorSchema.index({ isOnline: 1 });
+vendorSchema.index({ 'schedule.isRoaming': 1 });
 
 module.exports = mongoose.model('Vendor', vendorSchema);

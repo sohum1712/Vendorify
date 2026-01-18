@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ShoppingCart, Circle, Triangle, Square, Star, MapPin, ShieldCheck, Heart, Clock, ArrowRight, Utensils, Coffee, ShoppingBag, Carrot, MessageCircle, Share2, Navigation, ChevronRight, Send, X, Image } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Circle, Triangle, Square, Star, MapPin, ShieldCheck, Heart, Clock, ArrowRight, Utensils, Coffee, ShoppingBag, Carrot, MessageCircle, Share2, Navigation, ChevronRight, Send, X, Image, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppData } from '../../context/AppDataContext';
 import Navbar from '../../components/common/Navbar';
@@ -10,7 +10,10 @@ const VendorDetails = () => {
   const navigate = useNavigate();
   const { vendorId } = useParams();
   const { 
+    vendors,
     getVendorById, 
+    getVendorMenu,
+    getVendorReviews,
     addToCart, 
     cartSummary, 
     cart, 
@@ -18,10 +21,13 @@ const VendorDetails = () => {
     generateWhatsAppOrderLink,
     generateWhatsAppShareLink,
     addReview,
-    getVendorReviews
+    getVendorLocation
   } = useAppData();
 
-  const vendor = getVendorById(vendorId);
+  const [vendor, setVendor] = useState(null);
+  const [menu, setMenu] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('menu');
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
@@ -29,6 +35,7 @@ const VendorDetails = () => {
   const [customerName, setCustomerName] = useState('');
   const [showGallery, setShowGallery] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const iconMap = {
     Circle,
@@ -41,12 +48,52 @@ const VendorDetails = () => {
     ShoppingBag,
   };
 
+  useEffect(() => {
+    const loadVendor = async () => {
+      setLoading(true);
+      try {
+        const cachedVendor = vendors.find(v => v._id === vendorId);
+        if (cachedVendor) {
+          setVendor(cachedVendor);
+        }
+        
+        const vendorData = await getVendorById(vendorId);
+        if (vendorData) {
+          setVendor(vendorData);
+        }
+        
+        const [menuData, reviewsData] = await Promise.all([
+          getVendorMenu(vendorId),
+          getVendorReviews(vendorId)
+        ]);
+        
+        setMenu(menuData || []);
+        setReviews(reviewsData || []);
+      } catch (err) {
+        console.error('Error loading vendor:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadVendor();
+  }, [vendorId, getVendorById, getVendorMenu, getVendorReviews, vendors]);
+
+  const liveLocation = getVendorLocation(vendorId);
+
   const hasDifferentVendorInCart = useMemo(() => {
     if (!cart.length) return false;
     return String(cart[0].vendorId) !== String(vendorId);
   }, [cart, vendorId]);
 
-  const reviews = getVendorReviews(vendorId);
+  if (loading && !vendor) {
+    return (
+      <div className="min-h-screen bg-[#FDF9DC] flex flex-col items-center justify-center p-6 text-center">
+        <Loader2 size={48} className="animate-spin text-[#1A6950] mb-4" />
+        <p className="font-black uppercase tracking-widest text-gray-400">Loading vendor...</p>
+      </div>
+    );
+  }
 
   if (!vendor) {
     return (
@@ -66,18 +113,18 @@ const VendorDetails = () => {
   }
 
   const handleAdd = (item) => {
-    if (!vendor.verified) return;
+    if (!vendor.isVerified) return;
     if (hasDifferentVendorInCart) {
       const ok = window.confirm('Your cart has items from another vendor. Clear cart and add this item?');
       if (!ok) return;
       clearCart();
     }
-    addToCart({ vendorId: vendor.id, item });
+    addToCart({ vendorId: vendor._id, item });
   };
 
   const handleWhatsAppOrder = () => {
-    if (cart.length === 0 || String(cartSummary.vendorId) !== String(vendor.id)) return;
-    const link = generateWhatsAppOrderLink(vendor.phone, cart, cartSummary.total, vendor.name);
+    if (cart.length === 0 || String(cartSummary.vendorId) !== String(vendor._id)) return;
+    const link = generateWhatsAppOrderLink(vendor.phone, cart, cartSummary.total, vendor.shopName);
     window.open(link, '_blank');
   };
 
@@ -86,19 +133,30 @@ const VendorDetails = () => {
     window.open(link, '_blank');
   };
 
-  const handleSubmitReview = () => {
+  const handleSubmitReview = async () => {
     if (!customerName.trim() || !reviewText.trim()) return;
-    addReview({
-      vendorId: vendor.id,
-      customerName: customerName.trim(),
-      rating: reviewRating,
-      text: reviewText.trim()
-    });
-    setShowReviewModal(false);
-    setReviewRating(5);
-    setReviewText('');
-    setCustomerName('');
+    setSubmittingReview(true);
+    try {
+      const newReview = await addReview({
+        vendorId: vendor._id,
+        customerName: customerName.trim(),
+        rating: reviewRating,
+        text: reviewText.trim()
+      });
+      if (newReview) {
+        setReviews(prev => [...prev, newReview]);
+      }
+      setShowReviewModal(false);
+      setReviewRating(5);
+      setReviewText('');
+      setCustomerName('');
+    } finally {
+      setSubmittingReview(false);
+    }
   };
+
+  const displayMenu = menu.length > 0 ? menu : (vendor.menu || []);
+  const displayReviews = reviews.length > 0 ? reviews : (vendor.reviews || []);
 
   return (
     <div className="min-h-screen bg-[#FDF9DC] font-sans selection:bg-[#CDF546]">
@@ -109,9 +167,9 @@ const VendorDetails = () => {
           initial={{ scale: 1.2 }}
           animate={{ scale: 1 }}
           transition={{ duration: 1.5 }}
-          src={vendor.image} 
+          src={vendor.image || 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800'} 
           className="w-full h-full object-cover"
-          alt={vendor.name}
+          alt={vendor.shopName}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#FDF9DC] via-black/40 to-transparent" />
         
@@ -154,15 +212,21 @@ const VendorDetails = () => {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
               <div className="space-y-4">
                 <div className="flex items-center gap-3 flex-wrap">
-                  {vendor.verified && (
+                  {vendor.isVerified && (
                     <div className="bg-[#CDF546] text-gray-900 px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                       <ShieldCheck size={16} />
                       Verified Vendor
                     </div>
                   )}
+                  {vendor.isOnline && (
+                    <div className="bg-green-500 text-white px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                      <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                      Online Now
+                    </div>
+                  )}
                   <div className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white border border-white/10 flex items-center gap-2">
                     <Star size={14} className="text-yellow-400 fill-yellow-400" />
-                    {vendor.rating} ({vendor.totalReviews} reviews)
+                    {vendor.rating || 0} ({vendor.totalReviews || 0} reviews)
                   </div>
                   {vendor.schedule?.isRoaming && (
                     <div className="bg-blue-500/80 backdrop-blur-md px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white flex items-center gap-2">
@@ -172,11 +236,11 @@ const VendorDetails = () => {
                   )}
                 </div>
                 <h1 className="text-6xl md:text-8xl font-heading font-black text-gray-900 uppercase tracking-tighter leading-[0.8]">
-                  {vendor.name}
+                  {vendor.shopName}
                 </h1>
                 <div className="flex items-center gap-2 text-gray-600 font-bold text-[12px] uppercase tracking-[0.3em]">
                   <MapPin size={16} className="text-[#1A6950]" />
-                  {vendor.schedule?.currentStop || vendor.address}
+                  {liveLocation?.currentStop || vendor.schedule?.currentStop || vendor.address}
                 </div>
               </div>
             </div>
@@ -190,6 +254,9 @@ const VendorDetails = () => {
             <div className="flex items-center gap-3 mb-4">
               <Navigation size={20} />
               <h3 className="font-black uppercase tracking-widest text-sm">Live Schedule - Next Stops</h3>
+              {liveLocation && (
+                <span className="bg-green-400 text-gray-900 px-2 py-1 rounded-full text-[10px] font-black uppercase">Live Tracking</span>
+              )}
             </div>
             <div className="flex flex-wrap gap-3">
               {vendor.schedule.nextStops.map((stop, idx) => (
@@ -204,7 +271,7 @@ const VendorDetails = () => {
           </div>
         )}
 
-        {!vendor.verified && (
+        {!vendor.isVerified && (
           <div className="mb-10 bg-red-50 border border-red-100 p-8 rounded-[40px] flex items-center gap-6">
             <div className="w-16 h-16 bg-red-100 rounded-3xl flex items-center justify-center text-red-500 shrink-0">
               <ShieldCheck size={32} />
@@ -227,7 +294,7 @@ const VendorDetails = () => {
                   : 'bg-white text-gray-400 hover:text-gray-900 border border-gray-100'
               }`}
             >
-              {tab === 'reviews' ? `Reviews (${reviews.length})` : tab === 'gallery' ? `Gallery (${vendor.gallery?.length || 0})` : tab}
+              {tab === 'reviews' ? `Reviews (${displayReviews.length})` : tab === 'gallery' ? `Gallery (${vendor.gallery?.length || 0})` : tab}
             </button>
           ))}
         </div>
@@ -238,48 +305,65 @@ const VendorDetails = () => {
               <>
                 <div className="flex items-baseline justify-between mb-12">
                   <h2 className="text-3xl font-heading font-black text-gray-900 uppercase tracking-tight">Full Menu</h2>
-                  <span className="text-gray-400 font-bold text-[11px] uppercase tracking-widest">Available Now</span>
+                  <span className="text-gray-400 font-bold text-[11px] uppercase tracking-widest">
+                    {displayMenu.length} items
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <AnimatePresence>
-                    {(vendor.menu || []).map((item, idx) => {
-                      const IconComponent = iconMap[item.icon] || Utensils;
-                      return (
-                        <motion.div
-                          layout
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.05 }}
-                          key={item.id}
-                          className="group bg-white rounded-[40px] p-8 border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col justify-between"
-                        >
-                          <div className="flex justify-between items-start mb-10">
-                            <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-[#CDF546] transition-all duration-500">
-                              <IconComponent size={28} className="text-[#1A6950]" />
+                {displayMenu.length === 0 ? (
+                  <div className="bg-white rounded-[40px] p-12 text-center border border-gray-100">
+                    <Utensils size={48} className="mx-auto mb-4 text-gray-200" />
+                    <h3 className="text-xl font-black text-gray-900 uppercase mb-2">No Menu Items</h3>
+                    <p className="text-gray-400">This vendor hasn't added any menu items yet.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <AnimatePresence>
+                      {displayMenu.map((item, idx) => {
+                        const IconComponent = iconMap[item.icon] || Utensils;
+                        return (
+                          <motion.div
+                            layout
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: idx * 0.05 }}
+                            key={item._id || item.id || idx}
+                            className="group bg-white rounded-[40px] p-8 border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col justify-between"
+                          >
+                            <div className="flex justify-between items-start mb-10">
+                              <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center group-hover:scale-110 group-hover:bg-[#CDF546] transition-all duration-500">
+                                {item.image ? (
+                                  <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded-2xl" />
+                                ) : (
+                                  <IconComponent size={28} className="text-[#1A6950]" />
+                                )}
+                              </div>
+                              <span className="text-2xl font-black text-gray-900">₹{item.price}</span>
                             </div>
-                            <span className="text-2xl font-black text-gray-900">₹{item.price}</span>
-                          </div>
-                          
-                          <div>
-                            <h4 className="text-2xl font-black uppercase tracking-tight text-gray-900 mb-6">{item.name}</h4>
-                            <button
-                              disabled={!vendor.verified}
-                              onClick={() => handleAdd(item)}
-                              className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
-                                vendor.verified 
-                                  ? 'bg-[#1A6950] text-white hover:bg-black shadow-lg shadow-[#1A6950]/10' 
-                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                              }`}
-                            >
-                              {vendor.verified ? 'Add to Plate' : 'Unavailable'}
-                            </button>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </AnimatePresence>
-                </div>
+                            
+                            <div>
+                              <h4 className="text-2xl font-black uppercase tracking-tight text-gray-900 mb-2">{item.name}</h4>
+                              {item.description && (
+                                <p className="text-gray-400 text-sm mb-4">{item.description}</p>
+                              )}
+                              <button
+                                disabled={!vendor.isVerified || item.isAvailable === false}
+                                onClick={() => handleAdd(item)}
+                                className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${
+                                  vendor.isVerified && item.isAvailable !== false
+                                    ? 'bg-[#1A6950] text-white hover:bg-black shadow-lg shadow-[#1A6950]/10' 
+                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                }`}
+                              >
+                                {item.isAvailable === false ? 'Sold Out' : vendor.isVerified ? 'Add to Plate' : 'Unavailable'}
+                              </button>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </div>
+                )}
               </>
             )}
 
@@ -296,7 +380,7 @@ const VendorDetails = () => {
                   </button>
                 </div>
 
-                {reviews.length === 0 ? (
+                {displayReviews.length === 0 ? (
                   <div className="bg-white rounded-[40px] p-12 text-center border border-gray-100">
                     <Star size={48} className="mx-auto mb-4 text-gray-200" />
                     <h3 className="text-xl font-black text-gray-900 uppercase mb-2">No Reviews Yet</h3>
@@ -304,9 +388,9 @@ const VendorDetails = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {reviews.map((review) => (
+                    {displayReviews.map((review, idx) => (
                       <motion.div
-                        key={review.id}
+                        key={review._id || idx}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="bg-white rounded-[32px] p-6 border border-gray-100"
@@ -314,7 +398,7 @@ const VendorDetails = () => {
                         <div className="flex items-start justify-between mb-4">
                           <div>
                             <h4 className="font-black text-gray-900">{review.customerName}</h4>
-                            <p className="text-xs text-gray-400">{review.date}</p>
+                            <p className="text-xs text-gray-400">{new Date(review.createdAt || review.date).toLocaleDateString()}</p>
                           </div>
                           <div className="flex gap-1">
                             {[1, 2, 3, 4, 5].map(star => (
@@ -383,7 +467,10 @@ const VendorDetails = () => {
                     </div>
                     <div>
                       <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Current Location</p>
-                      <p className="font-black uppercase tracking-tight">{vendor.schedule?.currentStop || vendor.address}</p>
+                      <p className="font-black uppercase tracking-tight">{liveLocation?.currentStop || vendor.schedule?.currentStop || vendor.address}</p>
+                      {liveLocation && (
+                        <p className="text-[10px] text-green-400 font-bold mt-1">Live tracking active</p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -391,8 +478,8 @@ const VendorDetails = () => {
                       <ShoppingBag className="text-[#CDF546]" size={20} />
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Min Order</p>
-                      <p className="font-black uppercase tracking-tight">₹50</p>
+                      <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Category</p>
+                      <p className="font-black uppercase tracking-tight">{vendor.category || 'Food'}</p>
                     </div>
                   </div>
                 </div>
@@ -406,7 +493,7 @@ const VendorDetails = () => {
                 </button>
               </div>
 
-              {cartSummary.itemCount > 0 && String(cartSummary.vendorId) === String(vendor.id) && (
+              {cartSummary.itemCount > 0 && String(cartSummary.vendorId) === String(vendor._id) && (
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -510,11 +597,11 @@ const VendorDetails = () => {
 
                 <button
                   onClick={handleSubmitReview}
-                  disabled={!customerName.trim() || !reviewText.trim()}
+                  disabled={!customerName.trim() || !reviewText.trim() || submittingReview}
                   className="w-full bg-[#1A6950] text-white py-4 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
-                  <Send size={18} />
-                  Submit Review
+                  {submittingReview ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                  {submittingReview ? 'Submitting...' : 'Submit Review'}
                 </button>
               </div>
             </motion.div>
