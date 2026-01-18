@@ -26,14 +26,14 @@ export function Footer() {
         {/* Footer Grid */}
         <div className="grid gap-12 md:grid-cols-4 mb-20">
               <div className="md:col-span-1">
-                <Link to="/" className="flex items-center gap-4 mb-8">
-                  <img 
-                    src="/logo.svg" 
-                    alt="Vendorify Logo" 
-                    className="w-12 h-12 object-contain brightness-0 invert" 
-                  />
-                  <span className="text-4xl font-heading font-black text-[#CDF546] tracking-tight uppercase italic">Vendorify</span>
-                </Link>
+              <Link to="/" className="flex items-center gap-3 mb-8">
+                <img 
+                  src="/logo.svg" 
+                  alt="Vendorify Logo" 
+                  className="w-10 h-10 object-contain brightness-0 invert" 
+                />
+                <span className="text-2xl font-heading font-black text-[#CDF546] tracking-tight uppercase">Vendorify</span>
+              </Link>
             <p className="text-teal-100 font-sans font-medium leading-relaxed mb-8 opacity-70">
               The world's most trusted vendor verification and compliance monitoring platform.
             </p>
