@@ -1,3 +1,4 @@
+// Vendor Dashboard Component
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -25,6 +26,7 @@ const VendorDashboard = () => {
     updateVendorDetails
   } = useAppData();
 
+  const [showProductSettings, setShowProductSettings] = useState(null);
   const [isOnline, setIsOnline] = useState(true);
   const [showAIListing, setShowAIListing] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
@@ -53,10 +55,6 @@ const VendorDashboard = () => {
       toast.success('Product deleted');
       setShowDeleteConfirm(null);
     }
-  };
-
-  const handleProductSettings = (product) => {
-    setShowProductSettings(product);
   };
 
   const notifications = [
@@ -254,9 +252,12 @@ const VendorDashboard = () => {
                       <div className="flex flex-col items-end gap-3">
                         <div className={`w-3 h-3 rounded-full ${item.available ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.4)]' : 'bg-red-400'}`} />
                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-3 bg-white text-gray-300 rounded-xl hover:text-gray-900 hover:shadow-md transition-all">
-                            <Settings size={18} />
-                          </button>
+                            <button 
+                              onClick={() => setShowProductSettings(item)}
+                              className="p-3 bg-white text-gray-300 rounded-xl hover:text-gray-900 hover:shadow-md transition-all"
+                            >
+                              <Settings size={18} />
+                            </button>
                           <button
                             onClick={() => handleDeleteProduct(item.id)}
                             className="p-3 bg-white text-red-300 rounded-xl hover:text-red-500 hover:shadow-md transition-all"
@@ -419,7 +420,38 @@ const VendorDashboard = () => {
           )
         }
 
-        {showDeleteConfirm && (
+          {showProductSettings && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">Product Settings</h3>
+                  <button onClick={() => setShowProductSettings(null)} className="text-gray-400 hover:text-gray-900">
+                    <Plus className="rotate-45" size={24} />
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <div className="p-4 bg-gray-50 rounded-2xl flex items-center justify-between">
+                    <span className="font-bold text-gray-700">Available</span>
+                    <button className="w-12 h-6 bg-[#CDF546] rounded-full relative">
+                      <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
+                    </button>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-2xl flex items-center justify-between">
+                    <span className="font-bold text-gray-700">Out of Stock</span>
+                    <button className="w-12 h-6 bg-gray-200 rounded-full relative">
+                      <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
+          {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
