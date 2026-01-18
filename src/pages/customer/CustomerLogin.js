@@ -23,7 +23,11 @@ const CustomerLogin = () => {
       try {
         const result = await login({ [useMobile ? 'mobile' : 'email']: identifier, password: form.password });
         if (!result.success) {
-          setError(result.message || 'Login failed. Please check your credentials.');
+          if (result.message && result.message.includes('Problem with these credentials only')) {
+            setError('Problem with these credentials only');
+          } else {
+            setError(result.message || 'Login failed. Please check your credentials.');
+          }
         }
       } catch (err) {
         setError('Login failed. Please check your credentials.');

@@ -22,7 +22,11 @@ const VendorLogin = () => {
     try {
       const result = await login({ mobile: form.mobile, password: form.password });
       if (!result.success) {
-        setError(result.message || 'Login failed. Please check your credentials.');
+        if (result.message && result.message.includes('Problem with these credentials only')) {
+          setError('Problem with these credentials only');
+        } else {
+          setError(result.message || 'Login failed. Please check your credentials.');
+        }
       }
     } catch (err) {
       setError('Login failed. Please check your credentials.');

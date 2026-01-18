@@ -62,7 +62,11 @@ const VendorSignup = () => {
       
       const result = await register(userData);
       if (!result.success) {
-        setError(result.message || 'Registration failed. Please try again.');
+        if (result.message && result.message.includes('Problem with these credentials only')) {
+          setError('Problem with these credentials only');
+        } else {
+          setError(result.message || 'Registration failed. Please try again.');
+        }
       }
     } catch (err) {
       setError('Registration failed. Please try again.');

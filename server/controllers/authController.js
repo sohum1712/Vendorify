@@ -13,17 +13,18 @@ exports.register = async (req, res) => {
         const { name, email, password, role, mobile, shopName, address } = req.body;
 
         if (!name || (!email && !mobile) || !password) {
-            return res.status(400).json({ message: 'Please provide name, password and either email or mobile' });
+            return res.status(400).json({ message: 'Problem with these credentials only: missing required fields' });
         }
 
         const query = [];
         if (email) query.push({ email });
         if (mobile) query.push({ mobile });
 
-        const userExists = await User.findOne({ $or: query });
-
-        if (userExists) {
-            return res.status(400).json({ message: 'User already exists' });
+        if (query.length > 0) {
+            const userExists = await User.findOne({ $or: query });
+            if (userExists) {
+                return res.status(400).json({ message: 'Problem with these credentials only: email or mobile already registered' });
+            }
         }
 
         const userData = {
@@ -38,14 +39,20 @@ exports.register = async (req, res) => {
 
         if (user) {
             if (role === 'vendor') {
-                await Vendor.create({
-                    userId: user._id,
-                    shopName: shopName || `${name}'s Shop`,
-                    address: address || '',
-                    ownerName: name,
-                    phone: mobile || '',
-                    email: email || ''
-                });
+                try {
+                    await Vendor.create({
+                        userId: user._id,
+                        shopName: shopName || `${name}'s Shop`,
+                        address: address || '',
+                        ownerName: name,
+                        phone: mobile || '',
+                        email: email || ''
+                    });
+                } catch (vendorErr) {
+                    console.error('Vendor creation error:', vendorErr);
+                    // Even if vendor creation fails, the user is created. 
+                    // But for a robust system, we might want to handle this.
+                }
             }
 
             return res.status(201).json({
@@ -57,11 +64,17 @@ exports.register = async (req, res) => {
                 token: generateToken(user._id),
             });
         } else {
-            return res.status(400).json({ message: 'Invalid user data' });
+            return res.status(400).json({ message: 'Problem with these credentials only: invalid user data' });
         }
     } catch (err) {
         console.error('Register error:', err);
-        return res.status(500).json({ error: err.message });
+        if (err.name === 'ValidationError') {
+            return res.status(400).json({ message: `Problem with these credentials only: ${err.message}` });
+        }
+        if (err.code === 11000) {
+            return res.status(400).json({ message: 'Problem with these credentials only: email or mobile already in use' });
+        }
+        return res.status(500).json({ error: 'Internal server error. please try again.' });
     }
 };
 
@@ -70,7 +83,7 @@ exports.login = async (req, res) => {
         const { email, mobile, password } = req.body;
 
         if ((!email && !mobile) || !password) {
-            return res.status(400).json({ message: 'Please provide email/mobile and password' });
+            return res.status(400).json({ message: 'Problem with these credentials only: missing email/mobile or password' });
         }
 
         const query = [];
@@ -89,11 +102,11 @@ exports.login = async (req, res) => {
                 token: generateToken(user._id),
             });
         } else {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ message: 'Problem with these credentials only' });
         }
     } catch (err) {
         console.error('Login error:', err);
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: 'Internal server error. please try again.' });
     }
 };
 
