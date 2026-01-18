@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Navigation, Star, ShieldCheck, ArrowRight, Home } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, MapPin, Navigation, Star, ArrowRight, Home } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useAppData } from '../../context/AppDataContext';
 import Navbar from '../../components/common/Navbar';
 import { Footer } from '../../components/common/Footer';
@@ -13,10 +13,10 @@ const MapPage = () => {
   return (
     <div className="min-h-screen bg-[#FDF9DC] font-sans selection:bg-[#CDF546]">
       <Navbar role="customer" />
-      
+
       <div className="max-w-7xl mx-auto px-6 pt-32 pb-20">
         <div className="flex items-center gap-6 mb-12">
-          <button 
+          <button
             onClick={() => navigate('/customer')}
             className="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:shadow-xl transition-all"
           >
@@ -38,7 +38,7 @@ const MapPage = () => {
                 title="Map view"
                 loading="lazy"
               />
-              
+
               {/* Custom Map Controls Overlay */}
               <div className="absolute top-10 left-10 space-y-4">
                 <div className="bg-gray-900/90 backdrop-blur-xl text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-4 border border-white/10">
@@ -51,7 +51,7 @@ const MapPage = () => {
                 <button className="w-14 h-14 bg-white rounded-2xl shadow-2xl flex items-center justify-center text-gray-900 hover:scale-110 transition-transform">
                   <Navigation size={24} />
                 </button>
-                <button 
+                <button
                   onClick={() => navigate('/customer')}
                   className="w-14 h-14 bg-[#1A6950] rounded-2xl shadow-2xl flex items-center justify-center text-white hover:scale-110 transition-transform"
                 >
@@ -92,7 +92,7 @@ const MapPage = () => {
           <div className="lg:col-span-4 space-y-6">
             <div className="bg-gray-900 rounded-[56px] p-10 text-white relative overflow-hidden shadow-2xl h-full">
               <div className="absolute top-0 right-0 w-64 h-64 bg-[#CDF546] rounded-full blur-[100px] opacity-10 translate-x-1/2 -translate-y-1/2" />
-              
+
               <div className="flex justify-between items-center mb-10 relative z-10">
                 <h3 className="text-2xl font-heading font-black uppercase tracking-tight">On The Move</h3>
                 <span className="bg-[#CDF546] text-gray-900 px-3 py-1 rounded-full text-[10px] font-black">4 Live</span>

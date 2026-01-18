@@ -1,37 +1,17 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
-import { INITIAL_VENDORS, ROLES } from '../constants/roles';
+import { ROLES } from '../constants/roles';
 import { useAuth } from './AuthContext';
 import { useGeolocation } from '../hooks/useGeolocation';
+import io from 'socket.io-client';
 
-const STORAGE_KEYS = {
-  vendors: 'vendorify_vendors',
-  orders: 'vendorify_orders',
-  cart: 'vendorify_cart',
-};
+const SOCKET_URL = 'http://localhost:5000';
 
 const AppDataContext = createContext(null);
 
-const seedVendors = () => {
-  const seeded = (INITIAL_VENDORS || []).map((v) => ({
-    ...v,
-    verified: true,
-    status: v.status || 'Open',
-  }));
-  return seeded;
-};
-
-const readJson = (key, fallback) => {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw);
-  } catch {
-    return fallback;
-  }
-};
-
-const writeJson = (key, value) => {
-  localStorage.setItem(key, JSON.stringify(value));
+// Helper to get token
+const getToken = () => {
+  const user = JSON.parse(localStorage.getItem('vendorify_user'));
+  return user?.token;
 };
 
 const uid = () => `ORD-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
@@ -42,12 +22,14 @@ export const AppDataProvider = ({ children }) => {
   const [orders, setOrders] = useState([]);
   const [cart, setCart] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [vendorDetails, setVendorDetails] = useState(null);
 
   const updateVendorLocation = useCallback((vendorId, location) => {
-    setVendors((prev) => 
-      prev.map((v) => 
-        String(v.id) === String(vendorId) 
-          ? { ...v, location } 
+    setVendors((prev) =>
+      prev.map((v) =>
+        String(v.id) === String(vendorId)
+          ? { ...v, location }
           : v
       )
     );
@@ -55,7 +37,7 @@ export const AppDataProvider = ({ children }) => {
 
   const handleLocationUpdate = useCallback((location) => {
     setUserLocation(location);
-    
+
     // If user is a vendor, update their location in the global vendor list
     if (user?.role === ROLES.VENDOR && user?.vendorId) {
       updateVendorLocation(user.vendorId, location);
@@ -64,31 +46,68 @@ export const AppDataProvider = ({ children }) => {
 
   const { error: geoError } = useGeolocation(handleLocationUpdate, 120000);
 
+  const [socket, setSocket] = useState(null);
+
+  // Initialize Socket.IO
   useEffect(() => {
-    const storedVendors = readJson(STORAGE_KEYS.vendors, null);
-    const storedOrders = readJson(STORAGE_KEYS.orders, []);
-    const storedCart = readJson(STORAGE_KEYS.cart, []);
+    const newSocket = io(SOCKET_URL);
+    setSocket(newSocket);
 
-    const initialVendors = storedVendors && storedVendors.length ? storedVendors : seedVendors();
-
-    setVendors(initialVendors);
-    setOrders(storedOrders);
-    setCart(storedCart);
-
-    writeJson(STORAGE_KEYS.vendors, initialVendors);
+    return () => newSocket.close();
   }, []);
 
+  // Fetch Initial Data
   useEffect(() => {
-    writeJson(STORAGE_KEYS.vendors, vendors);
-  }, [vendors]);
+    const fetchData = async () => {
+      try {
+        const token = getToken();
+        if (!token) return;
 
-  useEffect(() => {
-    writeJson(STORAGE_KEYS.orders, orders);
-  }, [orders]);
+        // Fetch Products
+        const prodRes = await fetch(`${SOCKET_URL}/api/vendors/products`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (prodRes.ok) {
+          const prodData = await prodRes.json();
+          setProducts(prodData);
+        }
 
+        // Fetch Vendor Profile
+        const profileRes = await fetch(`${SOCKET_URL}/api/vendors/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          setVendorDetails(profileData);
+        }
+
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    };
+
+    if (user?.role === ROLES.VENDOR) {
+      fetchData();
+    }
+  }, [user]);
+
+  // Socket Listeners
   useEffect(() => {
-    writeJson(STORAGE_KEYS.cart, cart);
-  }, [cart]);
+    if (!socket) return;
+
+    if (user?.role === ROLES.VENDOR) {
+      socket.emit('join_vendor_room', user.vendorId || 1);
+    }
+
+    socket.on('vendor_location_update', (data) => {
+      console.log("Location Update:", data);
+      updateVendorLocation(data.vendorId, { lat: data.lat, lng: data.lng });
+    });
+
+    return () => {
+      socket.off('vendor_location_update');
+    };
+  }, [socket, user, updateVendorLocation]);
 
   const getVendorById = (vendorId) => vendors.find((v) => String(v.id) === String(vendorId));
 
@@ -192,7 +211,76 @@ export const AppDataProvider = ({ children }) => {
     updateVendorLocation,
   };
 
-  return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
+  // --- Extended Vendor Dashboard Logic ---
+
+  // Product CRUD
+  const addProduct = async (product) => {
+    try {
+      const token = getToken();
+      const res = await fetch(`${SOCKET_URL}/api/vendors/products`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(product)
+      });
+      const newProduct = await res.json();
+      setProducts(prev => [...prev, newProduct]);
+      return newProduct;
+    } catch (err) {
+      console.error("Add Product Error:", err);
+    }
+  };
+
+  const updateProduct = (id, updates) => {
+    // TODO: Implement API
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+  };
+
+  const deleteProduct = async (id) => {
+    try {
+      const token = getToken();
+      await fetch(`${SOCKET_URL}/api/vendors/products/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setProducts(prev => prev.filter(p => p._id !== id)); // MongoDB uses _id
+    } catch (err) {
+      console.error("Delete Product Error:", err);
+    }
+  };
+
+  const updateVendorDetails = async (updates) => {
+    try {
+      const token = getToken();
+      const res = await fetch(`${SOCKET_URL}/api/vendors/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(updates)
+      });
+      const updated = await res.json();
+      setVendorDetails(updated);
+    } catch (err) {
+      console.error("Update Profile Error:", err);
+    }
+  };
+
+  // Merge into context value
+  const extendedValue = {
+    ...value,
+    products,
+    vendorDetails,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    updateVendorDetails
+  };
+
+  return <AppDataContext.Provider value={extendedValue}>{children}</AppDataContext.Provider>;
 };
 
 export const useAppData = () => {

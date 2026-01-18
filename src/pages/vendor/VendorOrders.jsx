@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, XCircle, Clock, Package, MessageCircle, ArrowUpRight, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, Clock, Package, MessageCircle, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useAppData } from '../../context/AppDataContext';
@@ -32,10 +32,10 @@ const VendorOrders = () => {
   return (
     <div className="min-h-screen bg-[#FDF9DC] font-sans selection:bg-[#CDF546]">
       <Navbar role="vendor" />
-      
+
       <div className="max-w-7xl mx-auto px-6 pt-32 pb-20">
         <div className="flex items-center gap-6 mb-12">
-          <button 
+          <button
             onClick={() => navigate('/vendor')}
             className="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:shadow-xl transition-all"
           >
@@ -59,7 +59,7 @@ const VendorOrders = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <AnimatePresence>
               {orders.map((o, idx) => (
-                <motion.div 
+                <motion.div
                   layout
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -98,7 +98,7 @@ const VendorOrders = () => {
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-1">Total Amount</p>
                       <span className="text-3xl font-black text-gray-900">₹{o.total}</span>
                     </div>
-                    
+
                     <div className="flex gap-2">
                       {o.status === 'NEW' && (
                         <>
@@ -127,7 +127,7 @@ const VendorOrders = () => {
                           Complete
                         </button>
                       )}
-                      
+
                       <button className="bg-white border border-gray-100 p-4 rounded-[20px] text-gray-400 hover:text-gray-900 transition-all">
                         <MessageCircle size={20} />
                       </button>

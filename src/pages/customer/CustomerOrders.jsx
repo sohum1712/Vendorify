@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, MessageCircle, Clock, ShoppingBag, ArrowUpRight, Star, MapPin } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Clock, ShoppingBag, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppData } from '../../context/AppDataContext';
 import Navbar from '../../components/common/Navbar';
@@ -36,10 +36,10 @@ const CustomerOrders = () => {
   return (
     <div className="min-h-screen bg-[#FDF9DC] font-sans selection:bg-[#CDF546]">
       <Navbar role="customer" />
-      
+
       <div className="max-w-7xl mx-auto px-6 pt-32 pb-20">
         <div className="flex items-center gap-6 mb-12">
-          <button 
+          <button
             onClick={() => navigate('/customer')}
             className="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:shadow-xl transition-all"
           >
@@ -58,7 +58,7 @@ const CustomerOrders = () => {
             </div>
             <h3 className="text-2xl font-heading font-black text-gray-900 uppercase">No orders yet</h3>
             <p className="text-gray-400 font-medium mt-2">Start exploring vendors to place your first order.</p>
-            <button 
+            <button
               onClick={() => navigate('/customer')}
               className="mt-8 bg-[#1A6950] text-white px-10 py-5 rounded-3xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-all"
             >
@@ -71,7 +71,7 @@ const CustomerOrders = () => {
               {orders.map((o, idx) => {
                 const vendor = getVendorById(o.vendorId);
                 return (
-                  <motion.div 
+                  <motion.div
                     layout
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -110,16 +110,16 @@ const CustomerOrders = () => {
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-1">Paid Amount</p>
                         <span className="text-3xl font-black text-gray-900">₹{o.total}</span>
                       </div>
-                      
+
                       <div className="flex gap-2">
-                        <button 
+                        <button
                           onClick={() => handleShareOnWhatsApp(o)}
                           className="bg-white border border-gray-100 p-4 rounded-[20px] text-gray-400 hover:text-gray-900 hover:shadow-xl transition-all flex items-center gap-2 font-black uppercase tracking-widest text-[10px]"
                         >
                           <MessageCircle size={18} />
                           Share
                         </button>
-                        <button 
+                        <button
                           onClick={() => navigate(`/customer/vendor/${o.vendorId}`)}
                           className="bg-[#1A6950] text-white p-4 rounded-[20px] shadow-lg hover:scale-110 transition-transform"
                         >

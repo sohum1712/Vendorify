@@ -18,25 +18,82 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = (userData) => {
-    const role = userData.role || ROLES.CUSTOMER;
+  const register = async (userData) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
 
-    const userWithRole = {
-      ...userData,
-      role,
-      ...(role === ROLES.VENDOR && !userData.vendorId ? { vendorId: 1 } : {}),
-    };
-    
-    setUser(userWithRole);
-    localStorage.setItem('vendorify_user', JSON.stringify(userWithRole));
-    
-    // Redirect based on role
-    const redirectPath = 
-      userWithRole.role === ROLES.ADMIN ? '/admin' :
-      userWithRole.role === ROLES.VENDOR ? '/vendor' :
-      '/customer';
-    
-    navigate(redirectPath);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+
+      setUser(data);
+      localStorage.setItem('vendorify_user', JSON.stringify(data));
+
+      // Redirect based on role
+      const redirectPath =
+        data.role === ROLES.ADMIN ? '/admin' :
+          data.role === ROLES.VENDOR ? '/vendor' :
+            '/customer';
+
+      navigate(redirectPath);
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  };
+
+  const login = async (arg1, arg2) => {
+    try {
+      let credentials = {};
+      if (typeof arg1 === 'object') {
+        // Called as login({ mobile, password }) OR login({ email, password })
+        credentials = arg1;
+      } else {
+        // Called as login(email, password) - legacy support
+        credentials = { email: arg1, password: arg2 };
+      }
+
+      console.log("Login credentials:", credentials);
+
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      setUser(data);
+      localStorage.setItem('vendorify_user', JSON.stringify(data));
+
+      // Redirect based on role
+      console.log("Login Success. User Role:", data.role);
+      const redirectPath =
+        data.role === ROLES.ADMIN ? '/admin' :
+          data.role === ROLES.VENDOR ? '/vendor' :
+            '/customer';
+
+      console.log("Redirecting to:", redirectPath);
+      navigate(redirectPath);
+      return { success: true };
+    } catch (error) {
+      console.error("Login Error:", error);
+      return { success: false, message: error.message };
+    }
   };
 
   const logout = () => {
@@ -57,10 +114,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider 
+    <AuthContext.Provider
       value={{
         user,
         loading,
+        register,
         login,
         logout,
         updateUser,

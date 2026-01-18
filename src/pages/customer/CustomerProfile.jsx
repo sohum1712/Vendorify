@@ -1,32 +1,25 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../context/AppDataContext';
-import { 
-  ArrowLeft, 
-  User, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Star, 
-  Clock, 
+import {
+  User,
+  MapPin,
   ShoppingBag,
   Heart,
   Edit,
   Camera,
   TrendingUp,
   Package,
-  Award,
   Settings,
   ShieldCheck,
   ChevronRight
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '../../components/common/Navbar';
 import { Footer } from '../../components/common/Footer';
 
 const CustomerProfile = () => {
   const navigate = useNavigate();
-  const { getOrdersForCustomer } = useAppData();
+
   const [activeTab, setActiveTab] = useState('overview');
 
   const customerDetails = {
@@ -51,7 +44,7 @@ const CustomerProfile = () => {
   return (
     <div className="min-h-screen bg-[#FDF9DC] font-sans selection:bg-[#CDF546]">
       <Navbar role="customer" />
-      
+
       <div className="max-w-7xl mx-auto px-6 pt-32 pb-20">
         <div className="flex flex-col md:flex-row gap-12">
           {/* Profile Sidebar */}
@@ -65,10 +58,10 @@ const CustomerProfile = () => {
                   <Camera size={20} />
                 </button>
               </div>
-              
+
               <h1 className="text-3xl font-heading font-black text-gray-900 uppercase tracking-tight mb-2">{customerDetails.name}</h1>
               <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em] mb-8">Member Since {customerDetails.memberSince}</p>
-              
+
               <div className="flex items-center justify-center gap-3 bg-[#CDF546]/20 py-3 px-6 rounded-2xl text-[#1A6950] font-black text-[10px] uppercase tracking-widest border border-[#CDF546]/30">
                 <ShieldCheck size={16} />
                 Premium Member
@@ -100,11 +93,10 @@ const CustomerProfile = () => {
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-8 py-4 rounded-[24px] font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${
-                      activeTab === tab
+                    className={`px-8 py-4 rounded-[24px] font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab
                         ? 'bg-[#1A6950] text-white shadow-xl shadow-[#1A6950]/20'
                         : 'bg-gray-50 text-gray-400 hover:text-gray-900'
-                    }`}
+                      }`}
                   >
                     {tab}
                   </button>
@@ -145,7 +137,7 @@ const CustomerProfile = () => {
 
                 {activeTab === 'orders' && (
                   <div className="space-y-4">
-                    <button 
+                    <button
                       onClick={() => navigate('/customer/orders')}
                       className="w-full p-8 bg-gray-900 text-white rounded-[40px] flex items-center justify-between group hover:bg-black transition-all"
                     >
@@ -159,7 +151,7 @@ const CustomerProfile = () => {
                     </button>
                   </div>
                 )}
-                
+
                 {activeTab === 'favorites' && (
                   <div className="text-center py-20 bg-gray-50 rounded-[40px]">
                     <Heart size={48} className="text-gray-200 mx-auto mb-6" />

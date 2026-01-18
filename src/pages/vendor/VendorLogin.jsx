@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowRight, Lock, Phone, Store, ShieldCheck, Shield, ShoppingBag } from 'lucide-react';
+import { ArrowRight, Lock, Phone, ShieldCheck, Shield, ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 
@@ -22,7 +22,7 @@ const VendorLogin = () => {
     setError('');
     try {
       await login({ mobile: form.mobile, password: form.password, role: 'vendor' });
-      navigate('/vendor');
+      // Navigation is handled by AuthContext
     } catch (err) {
       setError('Login failed. Please check your credentials.');
     } finally {
@@ -45,10 +45,10 @@ const VendorLogin = () => {
           <div className="text-center mb-10">
             <div className="flex justify-center mb-6">
               <div className="w-20 h-20 bg-[#1A6950] rounded-[28px] flex items-center justify-center shadow-lg -rotate-3 group-hover:rotate-0 transition-all duration-500 p-4">
-                <img 
-                  src="/logo.svg" 
-                  alt="Vendorify Logo" 
-                  className="w-full h-full object-contain brightness-0 invert" 
+                <img
+                  src="/logo.svg"
+                  alt="Vendorify Logo"
+                  className="w-full h-full object-contain brightness-0 invert"
                 />
               </div>
             </div>
@@ -98,9 +98,9 @@ const VendorLogin = () => {
                 <Shield size={14} />
                 {showAadhaar ? 'Hide' : 'Add'} Aadhaar Verification
               </button>
-              
+
               {showAadhaar && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   className="mt-4 space-y-2"

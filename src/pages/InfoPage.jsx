@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Shield, Globe, Users, Briefcase, FileText, HelpCircle, Lock } from 'lucide-react';
+import { ArrowLeft, Shield, Globe, Users, Briefcase, FileText } from 'lucide-react';
 import Navbar from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
 
@@ -64,10 +64,10 @@ const InfoPage = () => {
   return (
     <div className="min-h-screen bg-[#FDF9DC] font-sans selection:bg-[#CDF546]">
       <Navbar />
-      
+
       <div className="max-w-7xl mx-auto px-6 pt-32 pb-20">
         <div className="flex items-center gap-6 mb-16">
-          <button 
+          <button
             onClick={() => navigate(-1)}
             className="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:shadow-xl transition-all"
           >
@@ -81,7 +81,7 @@ const InfoPage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
           {content.sections.map((section, idx) => (
-            <div 
+            <div
               key={idx}
               className="bg-white rounded-[48px] p-10 border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-500 group"
             >
@@ -97,7 +97,7 @@ const InfoPage = () => {
         {/* Feature Section */}
         <div className="bg-gray-900 rounded-[56px] p-12 md:p-20 text-white relative overflow-hidden mb-20">
           <div className="absolute top-0 right-0 w-96 h-96 bg-[#CDF546] rounded-full blur-[150px] opacity-10 translate-x-1/2 -translate-y-1/2" />
-          
+
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
             <div className="space-y-6 max-w-xl">
               <h2 className="text-5xl md:text-7xl font-heading font-black uppercase leading-[0.9] tracking-tighter">
@@ -108,7 +108,7 @@ const InfoPage = () => {
                 We believe in a secure ecosystem where every transaction is safe and every vendor is verified.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
               <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[40px] border border-white/10 text-center">
                 <h4 className="text-4xl font-black mb-1">100%</h4>

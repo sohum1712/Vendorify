@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Home, Clock, User, Store, Utensils, Carrot, Coffee, ShoppingBag, Bell, Star, ShieldCheck, Heart, ArrowRight, Filter } from 'lucide-react';
+import { Search, Home, Clock, User, Store, Utensils, Carrot, Coffee, ShoppingBag, Bell, Star, ShieldCheck, Heart, ArrowRight, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CATEGORIES } from '../constants/roles';
 import { useAppData } from '../context/AppDataContext';
@@ -38,7 +38,7 @@ const CustomerDashboard = () => {
   return (
     <div className="min-h-screen bg-[#FDF9DC] pb-24 font-sans selection:bg-[#CDF546] selection:text-gray-900">
       <Navbar role="customer" />
-      
+
       {/* Search & Header Section */}
       <div className="pt-32 pb-12 px-6">
         <div className="max-w-7xl mx-auto space-y-10">
@@ -50,7 +50,7 @@ const CustomerDashboard = () => {
                 <span className="text-white bg-[#1A6950] px-4 py-1 rounded-[20px] inline-block mt-2">Vendors</span>
               </h1>
             </div>
-            
+
             <div className="relative group w-full md:max-w-md">
               <div className="absolute inset-0 bg-[#CDF546] rounded-[32px] blur-2xl opacity-20 group-focus-within:opacity-40 transition-opacity" />
               <div className="relative bg-white border border-gray-100 rounded-[32px] p-2 flex items-center gap-2 shadow-xl">
@@ -81,16 +81,14 @@ const CustomerDashboard = () => {
                   key={category.id}
                   whileHover={{ y: -5 }}
                   onClick={() => setSelectedCategory(category.id)}
-                  className={`relative p-6 rounded-[32px] border transition-all duration-500 overflow-hidden ${
-                    isActive 
-                      ? 'bg-[#1A6950] border-[#1A6950] text-white shadow-2xl shadow-[#1A6950]/20' 
+                  className={`relative p-6 rounded-[32px] border transition-all duration-500 overflow-hidden ${isActive
+                      ? 'bg-[#1A6950] border-[#1A6950] text-white shadow-2xl shadow-[#1A6950]/20'
                       : 'bg-white border-gray-100 text-gray-400 hover:border-[#CDF546]'
-                  }`}
+                    }`}
                 >
                   <div className={`relative z-10 flex flex-col gap-4 ${isActive ? 'items-start' : 'items-center text-center'}`}>
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-500 ${
-                      isActive ? 'bg-[#CDF546] text-gray-900 rotate-12' : 'bg-gray-50'
-                    }`}>
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-500 ${isActive ? 'bg-[#CDF546] text-gray-900 rotate-12' : 'bg-gray-50'
+                      }`}>
                       {IconComponent && <IconComponent size={24} />}
                     </div>
                     <span className="text-[11px] font-black uppercase tracking-[0.2em]">{category.name}</span>
@@ -118,7 +116,7 @@ const CustomerDashboard = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           <AnimatePresence mode="popLayout">
             {filteredVendors.map((vendor, idx) => {
@@ -175,15 +173,15 @@ const CustomerDashboard = () => {
                           {vendor.category === 'food' ? 'Street Food' : vendor.category}
                         </span>
                       </div>
-                      
+
                       <h3 className={`font-heading font-black uppercase tracking-tight leading-[0.8] transition-colors group-hover:text-[#CDF546] ${isHero ? 'text-5xl md:text-7xl' : 'text-3xl md:text-4xl'}`}>
                         {vendor.name}
                       </h3>
-                      
+
                       <div className="flex items-center justify-between opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
-                          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/70 max-w-[200px] truncate">
-                            {typeof vendor.address === 'string' ? vendor.address : 'Roaming nearby'}
-                          </p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white/70 max-w-[200px] truncate">
+                          {typeof vendor.address === 'string' ? vendor.address : 'Roaming nearby'}
+                        </p>
                         <button className="bg-white text-gray-900 w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
                           <ArrowRight size={20} />
                         </button>
