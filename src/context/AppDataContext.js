@@ -30,6 +30,9 @@ export const AppDataProvider = ({ children }) => {
   });
   const [userLocation, setUserLocation] = useState(null);
   const [vendorLocations, setVendorLocations] = useState(new Map());
+  const [products, setProducts] = useState([]);
+  const [vendorDetails, setVendorDetails] = useState(null);
+  
   const socketRef = useRef(null);
   const customerId = getCustomerId();
 
@@ -208,11 +211,111 @@ export const AppDataProvider = ({ children }) => {
     }
   }, [customerId]);
 
+  const getOrdersForVendor = useCallback((vendorId) => {
+    return orders.filter(o => String(o.vendorId) === String(vendorId) || String(o.vendorId?._id) === String(vendorId));
+  }, [orders]);
+
+  const fetchVendorData = useCallback(async (vendorId) => {
+    try {
+      const token = localStorage.getItem('vendorify_token');
+      const headers = { 'Authorization': `Bearer ${token}` };
+
+      // Fetch Vendor Details
+      const vRes = await fetch(`${API_URL}/vendors/profile`, { headers });
+      if (vRes.ok) {
+        const vData = await vRes.json();
+        setVendorDetails(vData);
+      }
+
+      // Fetch Products
+      const pRes = await fetch(`${API_URL}/vendors/products`, { headers });
+      if (pRes.ok) {
+        const pData = await pRes.json();
+        setProducts(pData);
+      }
+
+      // Fetch Orders
+      const oRes = await fetch(`${API_URL}/orders/vendor`, { headers });
+      if (oRes.ok) {
+        const oData = await oRes.json();
+        setOrders(prev => {
+          const combined = [...prev, ...oData];
+          const unique = Array.from(new Map(combined.map(o => [o._id, o])).values());
+          return unique;
+        });
+      }
+    } catch (err) {
+      console.error('Fetch vendor data error:', err);
+    }
+  }, []);
+
+  const addProduct = useCallback(async (productData) => {
+    try {
+      const token = localStorage.getItem('vendorify_token');
+      const res = await fetch(`${API_URL}/vendors/products`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(productData)
+      });
+      if (res.ok) {
+        const newProduct = await res.json();
+        setProducts(prev => [...prev, newProduct]);
+        return newProduct;
+      }
+    } catch (err) {
+      console.error('Add product error:', err);
+    }
+  }, []);
+
+  const deleteProduct = useCallback(async (productId) => {
+    try {
+      const token = localStorage.getItem('vendorify_token');
+      const res = await fetch(`${API_URL}/vendors/products/${productId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setProducts(prev => prev.filter(p => p._id !== productId));
+      }
+    } catch (err) {
+      console.error('Delete product error:', err);
+    }
+  }, []);
+
+  const updateVendorDetails = useCallback(async (details) => {
+    try {
+      const token = localStorage.getItem('vendorify_token');
+      const res = await fetch(`${API_URL}/vendors/profile`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(details)
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setVendorDetails(updated);
+        return updated;
+      }
+    } catch (err) {
+      console.error('Update vendor error:', err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchVendors();
     fetchDeals();
     fetchCustomerOrders();
-  }, [fetchVendors, fetchDeals, fetchCustomerOrders]);
+    const token = localStorage.getItem('vendorify_token');
+    const user = JSON.parse(localStorage.getItem('vendorify_user') || '{}');
+    if (token && user.role === 'VENDOR') {
+      fetchVendorData();
+    }
+  }, [fetchVendors, fetchDeals, fetchCustomerOrders, fetchVendorData]);
 
   const getVendorById = useCallback(async (vendorId) => {
     const cached = vendors.find(v => v._id === vendorId);
@@ -417,6 +520,8 @@ export const AppDataProvider = ({ children }) => {
     geoError,
     customerId,
     vendorLocations,
+    products,
+    vendorDetails,
     fetchVendors,
     fetchNearbyVendors,
     fetchRoamingVendors,
@@ -436,6 +541,11 @@ export const AppDataProvider = ({ children }) => {
     generateWhatsAppShareLink,
     getVendorLocation,
     refetchLocation,
+    getOrdersForVendor,
+    fetchVendorData,
+    addProduct,
+    deleteProduct,
+    updateVendorDetails,
     socket: socketRef.current
   };
 
