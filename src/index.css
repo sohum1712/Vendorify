@@ -1,26 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,100..900;1,100..900&display=swap');
-@import url('https://fonts.cdnfonts.com/css/helvetica-neue-9');
-@import url('https://fonts.cdnfonts.com/css/deviantly-brush');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  @font-face {
-    font-family: 'Helvetica Neue';
-    src: url('https://fonts.cdnfonts.com/css/helvetica-neue-9') format('truetype');
+  .font-helvetica {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-weight: 900;
-    font-style: normal;
-    font-display: swap;
   }
   
-  @font-face {
-    font-family: 'Deviantly Brush';
-    src: url('https://fonts.cdnfonts.com/css/deviantly-brush') format('truetype');
+  .font-deviantly {
+    font-family: 'Archivo', cursive;
     font-weight: 400;
-    font-style: normal;
-    font-display: swap;
   }
 }
 
@@ -139,24 +132,12 @@ body {
 
 /* Typography */
 @layer base {
-  .font-helvetica {
-    font-family: 'Helvetica Neue', sans-serif;
-    font-weight: 900;
-    letter-spacing: -0.025em;
-  }
-
-  .font-deviantly {
-    font-family: 'Deviantly Brush', cursive;
-    font-weight: 400;
-    letter-spacing: 0.02em;
-  }
-
   /* Typography Scale */
   h1, .h1 {
     font-size: 2.25rem;
     line-height: 2.5rem;
     font-weight: 900;
-    font-family: 'Helvetica Neue', sans-serif;
+    font-family: 'Inter', sans-serif;
     letter-spacing: -0.025em;
     margin-bottom: 1.5rem;
   }
@@ -165,7 +146,7 @@ body {
     font-size: 1.875rem;
     line-height: 2.25rem;
     font-weight: 900;
-    font-family: 'Helvetica Neue', sans-serif;
+    font-family: 'Inter', sans-serif;
     letter-spacing: -0.025em;
     margin-bottom: 1.25rem;
   }

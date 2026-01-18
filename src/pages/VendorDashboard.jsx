@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LogOut, Store, Package, TrendingUp, Star, Plus, Edit, MapPin, MessageCircle, Camera, ShieldCheck, ArrowUpRight, Utensils, Settings, Bell, DollarSign, Trash2 } from 'lucide-react';
+import { LogOut, Store, Package, TrendingUp, Star, Plus, Edit, MapPin, MessageCircle, Camera, ShieldCheck, ArrowUpRight, Utensils, Settings, Bell, DollarSign, Trash2, AlertTriangle, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppData } from '../context/AppDataContext';
 import VendorVoiceAssistant from '../components/vendor/VendorVoiceAssistant';
@@ -10,10 +10,11 @@ import AddProductModal from '../components/vendor/AddProductModal';
 import ShopDetailsModal from '../components/vendor/ShopDetailsModal';
 import Navbar from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
+import { toast } from 'react-toastify';
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const {
     getOrdersForVendor,
     geoError,
@@ -28,31 +29,54 @@ const VendorDashboard = () => {
   const [showAIListing, setShowAIListing] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showProductSettings, setShowProductSettings] = useState(null);
 
-  const vendorId = 1;
+  const vendorId = user?.vendorId || user?.id || 1;
   const orders = getOrdersForVendor(vendorId);
   const completedOrders = orders.filter(o => o.status === 'COMPLETED');
   const totalEarnings = completedOrders.reduce((sum, o) => sum + o.total, 0);
 
   const handleAddProduct = useCallback((newProduct) => {
     addProduct(newProduct);
+    toast.success('Product added successfully!');
   }, [addProduct]);
 
   const handleDeleteProduct = (id) => {
-    deleteProduct(id);
+    setShowDeleteConfirm(id);
   };
 
+  const confirmDelete = () => {
+    if (showDeleteConfirm) {
+      deleteProduct(showDeleteConfirm);
+      toast.success('Product deleted');
+      setShowDeleteConfirm(null);
+    }
+  };
+
+  const handleProductSettings = (product) => {
+    setShowProductSettings(product);
+  };
+
+  const notifications = [
+    { id: 1, text: 'New order received!', time: '2 min ago', unread: true },
+    { id: 2, text: 'Your rating increased to 4.9', time: '1 hour ago', unread: true },
+    { id: 3, text: 'Payment of Rs 1,240 received', time: '3 hours ago', unread: false },
+  ];
+
   const stats = [
-    { id: 1, name: 'Today\'s Earnings', value: `₹${totalEarnings + 1240}`, change: '+12%', icon: DollarSign, color: 'bg-[#CDF546] text-gray-900', delay: 0 },
+    { id: 1, name: 'Today\'s Earnings', value: `Rs ${totalEarnings + 1240}`, change: '+12%', icon: DollarSign, color: 'bg-[#CDF546] text-gray-900', delay: 0 },
     { id: 2, name: 'Active Orders', value: orders.filter(o => o.status === 'NEW').length, change: '+2', icon: Package, color: 'bg-[#1A6950] text-white', delay: 0.1 },
-    { id: 3, name: 'Total Revenue', value: `₹${totalEarnings + 15000}`, change: '+8%', icon: TrendingUp, color: 'bg-white text-[#1A6950]', delay: 0.2 },
+    { id: 3, name: 'Total Revenue', value: `Rs ${totalEarnings + 15000}`, change: '+8%', icon: TrendingUp, color: 'bg-white text-[#1A6950]', delay: 0.2 },
     { id: 4, name: 'Avg Rating', value: vendorDetails?.rating || '4.8', change: `(${vendorDetails?.totalReviews || 120})`, icon: Star, color: 'bg-gray-900 text-white', delay: 0.3 },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      <Navbar />
-      <div className="max-w-[1600px] mx-auto px-6 md:px-12 pt-8">
+      <Navbar role="vendor" />
+      <div className="max-w-[1600px] mx-auto px-6 md:px-12 pt-28">
         {geoError && (
           <div className="mb-8 bg-red-100 text-red-600 px-8 py-4 rounded-[24px] border border-red-200 text-sm font-bold uppercase tracking-widest flex items-center gap-3">
             <MapPin size={18} />
@@ -98,22 +122,55 @@ const VendorDashboard = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4 bg-white/50 backdrop-blur-md p-2 rounded-[28px] border border-white/50 shadow-sm">
-            <button
-              onClick={() => setIsOnline(!isOnline)}
-              className={`flex items-center gap-3 px-8 py-4 rounded-[24px] font-black uppercase tracking-widest transition-all ${isOnline ? 'bg-white text-[#1A6950] shadow-md' : 'text-gray-400'
-                }`}
-            >
-              <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-[#1A6950]' : 'bg-gray-300'}`} />
-              {isOnline ? 'Accepting' : 'Paused'}
-            </button>
-            <button className="p-4 text-gray-400 hover:text-gray-900 transition-colors">
-              <Bell size={24} />
-            </button>
-            <button onClick={logout} className="p-4 text-gray-400 hover:text-red-500 transition-colors">
-              <LogOut size={24} />
-            </button>
-          </div>
+            <div className="flex items-center gap-4 bg-white/50 backdrop-blur-md p-2 rounded-[28px] border border-white/50 shadow-sm">
+              <button
+                onClick={() => setIsOnline(!isOnline)}
+                className={`flex items-center gap-3 px-8 py-4 rounded-[24px] font-black uppercase tracking-widest transition-all focus:outline-none focus:ring-2 focus:ring-[#CDF546] ${isOnline ? 'bg-white text-[#1A6950] shadow-md' : 'text-gray-400'
+                  }`}
+                aria-label={isOnline ? 'Currently accepting orders, click to pause' : 'Currently paused, click to start accepting'}
+              >
+                <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-[#1A6950]' : 'bg-gray-300'}`} />
+                {isOnline ? 'Accepting' : 'Paused'}
+              </button>
+              <div className="relative">
+                <button 
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="p-4 text-gray-400 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-[#CDF546] rounded-lg relative"
+                  aria-label="Notifications"
+                >
+                  <Bell size={24} />
+                  {notifications.filter(n => n.unread).length > 0 && (
+                    <span className="absolute top-2 right-2 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                  )}
+                </button>
+                {showNotifications && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute right-0 top-full mt-2 w-80 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden z-50"
+                  >
+                    <div className="p-4 border-b border-gray-100">
+                      <h4 className="font-black text-sm uppercase tracking-widest">Notifications</h4>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto">
+                      {notifications.map(n => (
+                        <div key={n.id} className={`p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors ${n.unread ? 'bg-[#CDF546]/10' : ''}`}>
+                          <p className="font-bold text-sm text-gray-900">{n.text}</p>
+                          <p className="text-xs text-gray-400 mt-1">{n.time}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+              <button 
+                onClick={logout} 
+                className="p-4 text-gray-400 hover:text-red-500 transition-colors focus:outline-none focus:ring-2 focus:ring-[#CDF546] rounded-lg"
+                aria-label="Logout"
+              >
+                <LogOut size={24} />
+              </button>
+            </div>
         </div>
 
         {/* Premium Stats Bento Grid - Compact */}
@@ -343,21 +400,51 @@ const VendorDashboard = () => {
         )
       }
 
-      {
-        showEditProfile && (
-          <ShopDetailsModal
-            isOpen={showEditProfile}
-            onClose={() => setShowEditProfile(false)}
-            details={vendorDetails}
-            onSave={updateVendorDetails}
-          />
-        )
-      }
+        {
+          showEditProfile && (
+            <ShopDetailsModal
+              isOpen={showEditProfile}
+              onClose={() => setShowEditProfile(false)}
+              details={vendorDetails}
+              onSave={updateVendorDetails}
+            />
+          )
+        }
+
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-[32px] p-8 max-w-sm w-full shadow-2xl"
+            >
+              <div className="flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mx-auto mb-6">
+                <AlertTriangle className="w-8 h-8 text-red-500" />
+              </div>
+              <h3 className="text-xl font-black text-gray-900 text-center mb-2">Delete Product?</h3>
+              <p className="text-gray-500 text-center text-sm mb-8">This action cannot be undone. The product will be permanently removed from your menu.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="flex-1 py-4 px-6 rounded-2xl border border-gray-200 text-gray-600 font-bold text-sm uppercase tracking-widest hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-[#CDF546]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="flex-1 py-4 px-6 rounded-2xl bg-red-500 text-white font-bold text-sm uppercase tracking-widest hover:bg-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
 
 
-      <Footer />
-    </div >
-  );
+        <Footer />
+      </div >
+    );
 };
 
 export default VendorDashboard;

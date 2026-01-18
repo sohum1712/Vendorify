@@ -20,10 +20,17 @@ export const AppDataProvider = ({ children }) => {
   const { user } = useAuth();
   const [vendors, setVendors] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    const savedCart = localStorage.getItem('vendorify_cart');
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
   const [userLocation, setUserLocation] = useState(null);
   const [products, setProducts] = useState([]);
   const [vendorDetails, setVendorDetails] = useState(null);
+
+  useEffect(() => {
+    localStorage.setItem('vendorify_cart', JSON.stringify(cart));
+  }, [cart]);
 
   const updateVendorLocation = useCallback((vendorId, location) => {
     setVendors((prev) =>
@@ -82,7 +89,7 @@ export const AppDataProvider = ({ children }) => {
         }
 
       } catch (err) {
-        console.error("Error fetching data:", err);
+        // Error fetching data - silently fail
       }
     };
 
@@ -99,10 +106,9 @@ export const AppDataProvider = ({ children }) => {
       socket.emit('join_vendor_room', user.vendorId || 1);
     }
 
-    socket.on('vendor_location_update', (data) => {
-      console.log("Location Update:", data);
-      updateVendorLocation(data.vendorId, { lat: data.lat, lng: data.lng });
-    });
+      socket.on('vendor_location_update', (data) => {
+        updateVendorLocation(data.vendorId, { lat: data.lat, lng: data.lng });
+      });
 
     return () => {
       socket.off('vendor_location_update');
@@ -228,9 +234,9 @@ export const AppDataProvider = ({ children }) => {
       const newProduct = await res.json();
       setProducts(prev => [...prev, newProduct]);
       return newProduct;
-    } catch (err) {
-      console.error("Add Product Error:", err);
-    }
+      } catch (err) {
+        // Error adding product
+      }
   };
 
   const updateProduct = (id, updates) => {
@@ -246,9 +252,9 @@ export const AppDataProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProducts(prev => prev.filter(p => p._id !== id)); // MongoDB uses _id
-    } catch (err) {
-      console.error("Delete Product Error:", err);
-    }
+      } catch (err) {
+        // Error deleting product
+      }
   };
 
   const updateVendorDetails = async (updates) => {
