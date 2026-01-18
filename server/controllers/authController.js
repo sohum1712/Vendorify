@@ -1,9 +1,10 @@
 const User = require('../models/User');
+const Vendor = require('../models/Vendor');
 const jwt = require('jsonwebtoken');
 
 // Generate JWT
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, {
+    return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret', {
         expiresIn: '30d',
     });
 };
@@ -13,7 +14,7 @@ const generateToken = (id) => {
 // @access  Public
 exports.register = async (req, res) => {
     try {
-        const { name, email, password, role, mobile } = req.body;
+        const { name, email, password, role, mobile, shopName, address } = req.body;
 
         if (!name || (!email && !mobile) || !password) {
             return res.status(400).json({ message: 'Please provide name, password and either email or mobile' });
@@ -41,6 +42,18 @@ exports.register = async (req, res) => {
         });
 
         if (user) {
+            // If vendor, create Vendor profile
+            if (role === 'vendor') {
+                await Vendor.create({
+                    userId: user._id,
+                    shopName: shopName || `${name}'s Shop`,
+                    address: address || '',
+                    ownerName: name,
+                    phone: mobile || '',
+                    email: email || ''
+                });
+            }
+
             res.status(201).json({
                 _id: user.id,
                 name: user.name,
