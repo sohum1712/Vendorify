@@ -2,16 +2,12 @@ const User = require('../models/User');
 const Vendor = require('../models/Vendor');
 const jwt = require('jsonwebtoken');
 
-// Generate JWT
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret', {
         expiresIn: '30d',
     });
 };
 
-// @desc    Register new user
-// @route   POST /api/auth/register
-// @access  Public
 exports.register = async (req, res) => {
     try {
         const { name, email, password, role, mobile, shopName, address } = req.body;
@@ -20,29 +16,27 @@ exports.register = async (req, res) => {
             return res.status(400).json({ message: 'Please provide name, password and either email or mobile' });
         }
 
-        // Check if user exists
-        const userExists = await User.findOne({
-            $or: [
-                { email: email || undefined },
-                { mobile: mobile || undefined }
-            ]
-        });
+        const query = [];
+        if (email) query.push({ email });
+        if (mobile) query.push({ mobile });
+
+        const userExists = await User.findOne({ $or: query });
 
         if (userExists) {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        // Create user
-        const user = await User.create({
+        const userData = {
             name,
-            email: email || undefined,
-            mobile: mobile || undefined,
             password,
             role: role || 'customer'
-        });
+        };
+        if (email) userData.email = email;
+        if (mobile) userData.mobile = mobile;
+
+        const user = await User.create(userData);
 
         if (user) {
-            // If vendor, create Vendor profile
             if (role === 'vendor') {
                 await Vendor.create({
                     userId: user._id,
@@ -54,8 +48,8 @@ exports.register = async (req, res) => {
                 });
             }
 
-            res.status(201).json({
-                _id: user.id,
+            return res.status(201).json({
+                _id: user._id,
                 name: user.name,
                 email: user.email,
                 mobile: user.mobile,
@@ -63,16 +57,14 @@ exports.register = async (req, res) => {
                 token: generateToken(user._id),
             });
         } else {
-            res.status(400).json({ message: 'Invalid user data' });
+            return res.status(400).json({ message: 'Invalid user data' });
         }
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Register error:', err);
+        return res.status(500).json({ error: err.message });
     }
 };
 
-// @desc    Authenticate a user
-// @route   POST /api/auth/login
-// @access  Public
 exports.login = async (req, res) => {
     try {
         const { email, mobile, password } = req.body;
@@ -81,38 +73,35 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: 'Please provide email/mobile and password' });
         }
 
-        // Check for user by email or mobile
-        const user = await User.findOne({
-            $or: [
-                { email: email || undefined },
-                { mobile: mobile || undefined }
-            ]
-        }).select('+password');
+        const query = [];
+        if (email) query.push({ email });
+        if (mobile) query.push({ mobile });
+
+        const user = await User.findOne({ $or: query }).select('+password');
 
         if (user && (await user.comparePassword(password))) {
-            res.json({
-                _id: user.id,
+            return res.json({
+                _id: user._id,
                 name: user.name,
                 email: user.email,
+                mobile: user.mobile,
                 role: user.role,
                 token: generateToken(user._id),
             });
         } else {
-            res.status(401).json({ message: 'Invalid credentials' });
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Login error:', err);
+        return res.status(500).json({ error: err.message });
     }
 };
 
-// @desc    Get user data
-// @route   GET /api/auth/me
-// @access  Private
 exports.getMe = async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
-        res.status(200).json(user);
+        return res.status(200).json(user);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        return res.status(500).json({ error: err.message });
     }
 };
