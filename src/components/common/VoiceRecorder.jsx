@@ -28,7 +28,7 @@ const VoiceRecorder = ({
     const recognition = new SpeechRecognition();
     recognitionRef.current = recognition;
 
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = false;
     recognition.lang = language;
 
@@ -38,17 +38,30 @@ const VoiceRecorder = ({
     };
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
+      const transcript = event.results[event.results.length - 1][0].transcript;
       if (onTranscript) {
         onTranscript(transcript);
       }
+      // Stop after one result since we are simulating single-shot but with better stability
+      recognition.stop();
     };
 
     recognition.onerror = (event) => {
       console.error('Speech recognition error', event.error);
-      setError(`Speech recognition error: ${event.error}`);
+      let errorMsg = `Speech recognition error: ${event.error}`;
+      
+      if (event.error === 'network') {
+        errorMsg = 'Network error: Speech recognition requires an internet connection or is being blocked. Try again or use a different browser.';
+      } else if (event.error === 'not-allowed') {
+        errorMsg = 'Microphone access denied. Please enable microphone permissions.';
+      } else if (event.error === 'no-speech') {
+        return; // Ignore "no-speech" as it often fires prematurely
+      }
+      
+      setError(errorMsg);
       if (setIsListening) setIsListening(false);
       else setInternalIsRecording(false);
+      setIsProcessing(false);
     };
 
     recognition.onend = () => {

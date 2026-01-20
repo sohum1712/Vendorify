@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Minus, MessageCircle, ShoppingBag, ArrowRight, ShieldCheck, Clock } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, MessageCircle, ShoppingBag, ArrowRight, ShieldCheck, Clock, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppData } from '../../context/AppDataContext';
 import Navbar from '../../components/common/Navbar';
@@ -8,21 +8,46 @@ import { Footer } from '../../components/common/Footer';
 
 const CartPage = () => {
   const navigate = useNavigate();
-  const { cart, cartSummary, updateCartQty, placeOrder, getVendorById } = useAppData();
+  const { cart, cartSummary, updateCartQty, placeOrder, vendors, getVendorById, generateWhatsAppOrderLink } = useAppData();
   const [placing, setPlacing] = useState(false);
   const [lastOrder, setLastOrder] = useState(null);
+  const [vendor, setVendor] = useState(null);
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
 
-  const vendor = useMemo(() => {
-    if (!cartSummary.vendorId) return null;
-    return getVendorById(cartSummary.vendorId);
-  }, [cartSummary.vendorId, getVendorById]);
+  useEffect(() => {
+    const loadVendor = async () => {
+      if (!cartSummary.vendorId) return;
+      
+      const cachedVendor = vendors.find(v => v._id === cartSummary.vendorId);
+      if (cachedVendor) {
+        setVendor(cachedVendor);
+        return;
+      }
+      
+      const vendorData = await getVendorById(cartSummary.vendorId);
+      if (vendorData) {
+        setVendor(vendorData);
+      }
+    };
+    loadVendor();
+  }, [cartSummary.vendorId, vendors, getVendorById]);
 
-  const canPlaceOrder = !vendor || vendor.verified;
+  const canPlaceOrder = !vendor || vendor.isVerified;
 
   const handlePlaceOrder = async () => {
+    if (!customerName.trim()) {
+      alert('Please enter your name');
+      return;
+    }
+    
     setPlacing(true);
     try {
-      const order = placeOrder({ customerName: 'Customer', address: 'MG Road, Bengaluru' });
+      const order = await placeOrder({ 
+        customerName: customerName.trim(), 
+        customerPhone: customerPhone.trim(),
+        address: '' 
+      });
       if (order) {
         setLastOrder(order);
       }
@@ -31,10 +56,16 @@ const CartPage = () => {
     }
   };
 
+  const handleWhatsAppOrder = () => {
+    if (!vendor || cart.length === 0) return;
+    const link = generateWhatsAppOrderLink(vendor.phone, cart, cartSummary.total, vendor.shopName);
+    window.open(link, '_blank');
+  };
+
   const handleShareOnWhatsApp = (order) => {
-    const vendorName = vendor?.name || 'Vendor';
+    const vendorName = vendor?.shopName || 'Vendor';
     const itemsList = order.items
-      .map(item => `• ${item.qty}x ${item.name}`)
+      .map(item => `• ${item.quantity}x ${item.name}`)
       .join('\n');
     const message = `*Order Confirmation*\n\n*Vendor:* ${vendorName}\n*Items:*\n${itemsList}\n\n*Total:* ₹${order.total}\n\nStatus: ${order.status}`;
     const encoded = encodeURIComponent(message);
@@ -70,23 +101,24 @@ const CartPage = () => {
               <ShieldCheck size={48} />
             </div>
             <h2 className="text-4xl font-heading font-black text-gray-900 uppercase tracking-tighter mb-4">Order Successful!</h2>
-            <p className="text-gray-400 font-medium text-lg mb-12">
-              Your order from <span className="text-[#1A6950] font-black">{vendor?.name}</span> has been placed.
+            <p className="text-gray-400 font-medium text-lg mb-4">
+              Your order from <span className="text-[#1A6950] font-black">{vendor?.shopName}</span> has been placed.
             </p>
+            <p className="text-sm text-gray-500 mb-12">Order ID: {lastOrder._id?.slice(-8)}</p>
             
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 onClick={() => handleShareOnWhatsApp(lastOrder)}
-                className="flex-1 bg-gray-900 text-white py-6 rounded-3xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-black transition-all"
+                className="flex-1 bg-green-600 text-white py-6 rounded-3xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 hover:bg-green-700 transition-all"
               >
                 <MessageCircle size={18} />
-                Share Order
+                Share on WhatsApp
               </button>
               <button
-                onClick={() => navigate('/customer/orders')}
+                onClick={() => navigate('/customer')}
                 className="flex-1 bg-white border border-gray-100 text-gray-900 py-6 rounded-3xl font-black uppercase tracking-widest text-xs hover:shadow-xl transition-all"
               >
-                View History
+                Continue Shopping
               </button>
             </div>
           </motion.div>
@@ -114,14 +146,27 @@ const CartPage = () => {
                   </div>
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Ordering From</p>
-                    <p className="font-black uppercase tracking-tight text-gray-900">{vendor?.name}</p>
+                    <p className="font-black uppercase tracking-tight text-gray-900">{vendor?.shopName || 'Loading...'}</p>
                   </div>
                 </div>
-                {!vendor?.verified && (
-                  <span className="bg-red-50 text-red-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-100">
-                    Not Verified
-                  </span>
-                )}
+                <div className="flex items-center gap-3">
+                  {vendor && !vendor.isVerified && (
+                    <span className="bg-red-50 text-red-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-100">
+                      Not Verified
+                    </span>
+                  )}
+                  {vendor?.isOnline && (
+                    <span className="bg-green-50 text-green-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-green-100 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      Online
+                    </span>
+                  )}
+                  {vendor?.schedule?.isRoaming && (
+                    <span className="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-blue-100">
+                      Roaming
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -132,12 +177,16 @@ const CartPage = () => {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
-                      key={`${ci.vendorId}-${ci.item.id}`}
+                      key={`${ci.vendorId}-${ci.item._id || ci.item.id}`}
                       className="group bg-white rounded-[40px] p-8 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 flex items-center justify-between"
                     >
                       <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center group-hover:bg-[#CDF546] transition-colors duration-500">
-                          <ShoppingBag size={24} className="text-[#1A6950]" />
+                        <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center group-hover:bg-[#CDF546] transition-colors duration-500 overflow-hidden">
+                          {ci.item.image ? (
+                            <img src={ci.item.image} alt={ci.item.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <ShoppingBag size={24} className="text-[#1A6950]" />
+                          )}
                         </div>
                         <div>
                           <h4 className="text-xl font-black uppercase tracking-tight text-gray-900 mb-1">{ci.item.name}</h4>
@@ -147,14 +196,14 @@ const CartPage = () => {
 
                       <div className="flex items-center gap-4 bg-gray-50 p-2 rounded-2xl border border-gray-100">
                         <button
-                          onClick={() => updateCartQty({ vendorId: ci.vendorId, itemId: ci.item.id, qty: ci.qty - 1 })}
+                          onClick={() => updateCartQty({ vendorId: ci.vendorId, itemId: ci.item._id || ci.item.id, qty: ci.qty - 1 })}
                           className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 hover:shadow-md transition-all"
                         >
                           <Minus size={16} />
                         </button>
                         <span className="w-8 text-center font-black text-gray-900">{ci.qty}</span>
                         <button
-                          onClick={() => updateCartQty({ vendorId: ci.vendorId, itemId: ci.item.id, qty: ci.qty + 1 })}
+                          onClick={() => updateCartQty({ vendorId: ci.vendorId, itemId: ci.item._id || ci.item.id, qty: ci.qty + 1 })}
                           className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-gray-400 hover:text-gray-900 hover:shadow-md transition-all"
                         >
                           <Plus size={16} />
@@ -163,6 +212,32 @@ const CartPage = () => {
                     </motion.div>
                   ))}
                 </AnimatePresence>
+              </div>
+
+              <div className="bg-white rounded-[32px] p-6 border border-gray-100 mt-8">
+                <h3 className="font-black uppercase tracking-tight text-gray-900 mb-4">Your Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Your Name *</label>
+                    <input
+                      type="text"
+                      value={customerName}
+                      onChange={e => setCustomerName(e.target.value)}
+                      placeholder="Enter your name"
+                      className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[#CDF546] focus:border-transparent outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Phone (Optional)</label>
+                    <input
+                      type="tel"
+                      value={customerPhone}
+                      onChange={e => setCustomerPhone(e.target.value)}
+                      placeholder="Enter phone number"
+                      className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-[#CDF546] focus:border-transparent outline-none"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -193,18 +268,42 @@ const CartPage = () => {
                   </p>
                 )}
 
-                <button 
-                  disabled={placing || !canPlaceOrder}
-                  onClick={handlePlaceOrder}
-                  className={`w-full py-6 rounded-[28px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
-                    canPlaceOrder 
-                      ? 'bg-[#CDF546] text-gray-900 hover:scale-105 shadow-xl shadow-[#CDF546]/20' 
-                      : 'bg-white/5 text-white/20 cursor-not-allowed'
-                  }`}
-                >
-                  {placing ? 'Processing...' : 'Place Order'}
-                  {!placing && <ArrowRight size={20} />}
-                </button>
+                <div className="space-y-3">
+                  <button 
+                    onClick={handleWhatsAppOrder}
+                    disabled={!canPlaceOrder}
+                    className={`w-full py-5 rounded-[24px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
+                      canPlaceOrder 
+                        ? 'bg-green-500 text-white hover:bg-green-600' 
+                        : 'bg-white/5 text-white/20 cursor-not-allowed'
+                    }`}
+                  >
+                    <MessageCircle size={20} />
+                    Order via WhatsApp
+                  </button>
+                  
+                  <button 
+                    disabled={placing || !canPlaceOrder || !customerName.trim()}
+                    onClick={handlePlaceOrder}
+                    className={`w-full py-6 rounded-[28px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
+                      canPlaceOrder && customerName.trim()
+                        ? 'bg-[#CDF546] text-gray-900 hover:scale-105 shadow-xl shadow-[#CDF546]/20' 
+                        : 'bg-white/5 text-white/20 cursor-not-allowed'
+                    }`}
+                  >
+                    {placing ? (
+                      <>
+                        <Loader2 size={20} className="animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        Place Order In-App
+                        <ArrowRight size={20} />
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

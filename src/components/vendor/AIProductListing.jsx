@@ -1,445 +1,326 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { Camera, X, Plus, Mic, Check, AlertCircle } from 'lucide-react';
-import VoiceRecorder from '../common/VoiceRecorder';
-import { Card, CardContent } from '../common/Card';
+import React, { useState, useRef } from 'react';
+import { Camera, X, Check, Type, Search, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const LANGUAGES = {
-  en: { name: 'English', code: 'en' },
-  hi: { name: 'हिंदी', code: 'hi' },
-  te: { name: 'తెలుగు', code: 'te' }
+
+const SCRAPED_DATA = {
+  'butter chicken': {
+    name: "Butter Chicken",
+    price: 280,
+    category: "food",
+    description: "Rich, creamy tomato curry with tender chicken pieces.",
+    image: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&q=80&w=400",
+    calories: "450 kcal"
+  },
+  'biryani': {
+    name: "Chicken Biryani",
+    price: 220,
+    category: "food",
+    description: "Aromatic basmati rice cooked with spices and chicken.",
+    image: "https://images.unsplash.com/photo-1589302168068-964664d93dc0?auto=format&fit=crop&q=80&w=400",
+    calories: "600 kcal"
+  },
+  'tea': {
+    name: "Masala Chai",
+    price: 20,
+    category: "beverage",
+    description: "Spiced Indian tea brewed with milk and ginger.",
+    image: "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80&w=400",
+    calories: "120 kcal"
+  }
 };
 
 // Product recognition database (mock AI recognition)
 const PRODUCT_RECOGNITION = {
   // English
-  'samosa': { name: 'Samosa', category: 'food', defaultPrice: 20 },
-  'pani puri': { name: 'Pani Puri', category: 'food', defaultPrice: 30 },
-  'dosa': { name: 'Dosa', category: 'food', defaultPrice: 40 },
-  'idli': { name: 'Idli', category: 'food', defaultPrice: 15 },
-  'vada pav': { name: 'Vada Pav', category: 'food', defaultPrice: 25 },
-  'chai': { name: 'Chai', category: 'beverage', defaultPrice: 10 },
-  'coffee': { name: 'Coffee', category: 'beverage', defaultPrice: 15 },
-  
-  // Hindi
-  'समोसा': { name: 'Samosa', category: 'food', defaultPrice: 20 },
-  'पानी पूरी': { name: 'Pani Puri', category: 'food', defaultPrice: 30 },
-  'डोसा': { name: 'Dosa', category: 'food', defaultPrice: 40 },
-  'इडली': { name: 'Idli', category: 'food', defaultPrice: 15 },
-  'वड़ा पाव': { name: 'Vada Pav', category: 'food', defaultPrice: 25 },
-  'चाय': { name: 'Chai', category: 'beverage', defaultPrice: 10 },
-  'कॉफी': { name: 'Coffee', category: 'beverage', defaultPrice: 15 },
-  
-  // Telugu
-  'సమోసా': { name: 'Samosa', category: 'food', defaultPrice: 20 },
-  'పానీ పూరీ': { name: 'Pani Puri', category: 'food', defaultPrice: 30 },
-  'దోసా': { name: 'Dosa', category: 'food', defaultPrice: 40 },
-  'ఇడ్లీ': { name: 'Idli', category: 'food', defaultPrice: 15 },
-  'వడా పావ్': { name: 'Vada Pav', category: 'food', defaultPrice: 25 },
-  'చై': { name: 'Chai', category: 'beverage', defaultPrice: 10 },
-  'కాఫీ': { name: 'Coffee', category: 'beverage', defaultPrice: 15 },
+  'samosa': { name: 'Samosa', category: 'food', defaultPrice: 20, image: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&q=80&w=400" },
+  'pani puri': { name: 'Pani Puri', category: 'food', defaultPrice: 30, image: "https://images.unsplash.com/photo-1593560708920-63984be368ad?auto=format&fit=crop&q=80&w=400" },
+  'dosa': { name: 'Dosa', category: 'food', defaultPrice: 40, image: "https://images.unsplash.com/photo-1668236543090-d2f8969528d6?auto=format&fit=crop&q=80&w=400" },
+  'idli': { name: 'Idli', category: 'food', defaultPrice: 15, image: "https://images.unsplash.com/photo-1589301760014-d929645e3b88?auto=format&fit=crop&q=80&w=400" },
 };
 
 const AIProductListing = ({ onClose, onProductAdded }) => {
-  const [step, setStep] = useState('photo'); // photo, voice, confirm
+  const [mode, setMode] = useState('photo'); // 'photo' | 'text'
+  const [step, setStep] = useState('input'); // input, processing, confirm
   const [photo, setPhoto] = useState(null);
-  const [isListening, setIsListening] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState('en');
-  const [recognizedProduct, setRecognizedProduct] = useState(null);
-  const [voiceInput, setVoiceInput] = useState('');
-  const [productDetails, setProductDetails] = useState({
-    name: '',
-    price: '',
-    category: '',
-    description: ''
-  });
-  
+  const [textQuery, setTextQuery] = useState('');
+  const [productDetails, setProductDetails] = useState(null);
+
   const fileInputRef = useRef(null);
 
-  const simulateProductRecognition = useCallback((filename) => {
-    setIsProcessing(true);
-    
-    // Simulate AI processing delay
-    setTimeout(() => {
-      // Mock recognition based on filename (in real app, this would be actual AI vision)
-      const lowerFilename = filename.toLowerCase();
-      let recognized = null;
-      
-      if (lowerFilename.includes('samosa') || lowerFilename.includes('సమోసా') || lowerFilename.includes('समोसा')) {
-        recognized = PRODUCT_RECOGNITION['samosa'];
-      } else if (lowerFilename.includes('pani') || lowerFilename.includes('పానీ') || lowerFilename.includes('पानी')) {
-        recognized = PRODUCT_RECOGNITION['pani puri'];
-      } else if (lowerFilename.includes('dosa') || lowerFilename.includes('దోసా') || lowerFilename.includes('डोसा')) {
-        recognized = PRODUCT_RECOGNITION['dosa'];
-      } else {
-        // Default to samosa if not recognized
-        recognized = PRODUCT_RECOGNITION['samosa'];
-      }
-      
-      setRecognizedProduct(recognized);
-      setProductDetails({
-        name: recognized.name,
-        price: recognized.defaultPrice.toString(),
-        category: recognized.category,
-        description: `Fresh ${recognized.name} from our kitchen`
-      });
-      setIsProcessing(false);
-      setStep('voice');
-    }, 1500);
-  }, []);
+  const simulateProcessing = (type, data) => {
+    setStep('processing');
 
-  const handlePhotoCapture = useCallback((e) => {
+    setTimeout(() => {
+      let result = null;
+
+      if (type === 'photo') {
+        const lowerName = data.name.toLowerCase();
+        const key = Object.keys(PRODUCT_RECOGNITION).find(k => lowerName.includes(k));
+        result = key ? PRODUCT_RECOGNITION[key] : { ...PRODUCT_RECOGNITION['samosa'], name: 'Unknown Item' }; // Fallback
+      } else if (type === 'text') {
+        const lowerName = data.toLowerCase();
+        const key = Object.keys(SCRAPED_DATA).find(k => lowerName.includes(k));
+
+        // If not found, generate a generic one based on input
+        if (!key) {
+          result = {
+            name: data,
+            price: 100,
+            category: 'food',
+            description: `Freshly prepared ${data}.`,
+            image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=400",
+            calories: "Unknown"
+          };
+        } else {
+          result = SCRAPED_DATA[key];
+        }
+      }
+
+      setProductDetails({
+        name: result.name,
+        price: result.defaultPrice || result.price,
+        category: result.category,
+        description: result.description || "Fresh and delicious.",
+        image: result.image || photo, // Use recognized image or uploaded photo
+        cal: result.calories
+      });
+      setStep('confirm');
+    }, 2000);
+  };
+
+  const handlePhotoCapture = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
         setPhoto(e.target.result);
-        // Simulate AI product recognition
-        simulateProductRecognition(file.name);
+        simulateProcessing('photo', { name: file.name });
       };
       reader.readAsDataURL(file);
     }
-  }, [simulateProductRecognition]);
-
-  const handleVoiceInput = useCallback((transcript) => {
-    setVoiceInput(transcript);
-    
-    // Extract product name and price from voice input
-    const lowerTranscript = transcript.toLowerCase();
-    
-    // Try to find product in recognition database
-    let foundProduct = null;
-    Object.entries(PRODUCT_RECOGNITION).forEach(([key, product]) => {
-      if (lowerTranscript.includes(key)) {
-        foundProduct = product;
-      }
-    });
-    
-    // Extract price using regex (looks for numbers)
-    const priceMatch = transcript.match(/(\d+)/);
-    const extractedPrice = priceMatch ? priceMatch[0] : '';
-    
-    if (foundProduct) {
-      setProductDetails(prev => ({
-        ...prev,
-        name: foundProduct.name,
-        category: foundProduct.category,
-        price: extractedPrice || prev.price || foundProduct.defaultPrice.toString()
-      }));
-    } else if (extractedPrice) {
-      setProductDetails(prev => ({
-        ...prev,
-        price: extractedPrice
-      }));
-    }
-  }, []);
-
-  const handleAddProduct = useCallback(() => {
-    const newProduct = {
-      id: Date.now(),
-      ...productDetails,
-      price: parseInt(productDetails.price),
-      available: true,
-      image: photo || 'https://via.placeholder.com/150'
-    };
-    
-    onProductAdded(newProduct);
-    onClose();
-  }, [productDetails, photo, onProductAdded, onClose]);
-
-  const resetForm = useCallback(() => {
-    setStep('photo');
-    setPhoto(null);
-    setRecognizedProduct(null);
-    setVoiceInput('');
-    setProductDetails({
-      name: '',
-      price: '',
-      category: '',
-      description: ''
-    });
-  }, []);
-
-  const responses = {
-    en: {
-      title: 'Add New Product',
-      photoStep: 'Take a photo of your product',
-      voiceStep: 'Speak product name and price',
-      confirmStep: 'Confirm product details',
-      takePhoto: 'Take Photo',
-      retakePhoto: 'Retake Photo',
-      speakDetails: 'Speak Details',
-      confirmAdd: 'Add Product',
-      processing: 'AI is recognizing product...',
-      recognized: 'Product recognized!',
-      manualInput: 'Or type manually'
-    },
-    hi: {
-      title: 'नया उत्पाद जोड़ें',
-      photoStep: 'अपने उत्पाद का फोटो लें',
-      voiceStep: 'उत्पाद नाम और मूल्य बोलें',
-      confirmStep: 'उत्पाद विवरण पुष्टि करें',
-      takePhoto: 'फोटो लें',
-      retakePhoto: 'फिर से फोटो लें',
-      speakDetails: 'विवरण बोलें',
-      confirmAdd: 'उत्पाद जोड़ें',
-      processing: 'AI उत्पाद पहचान रहा है...',
-      recognized: 'उत्पाद पहचाना गया!',
-      manualInput: 'या मैन्युअली टाइप करें'
-    },
-    te: {
-      title: 'కొత్త ఉత్పత్తి జోడండి',
-      photoStep: 'మీ ఉత్పత్తి ఫోటో తీసుకోండి',
-      voiceStep: 'ఉత్పత్తి పేరు మరియు ధర చెప్పండి',
-      confirmStep: 'ఉత్పత్తి వివరాలను నిర్ధారించండి',
-      takePhoto: 'ఫోటో తీసుకోండి',
-      retakePhoto: 'మళ్ళీ ఫోటో తీసుకోండి',
-      speakDetails: 'వివరాలను చెప్పండి',
-      confirmAdd: 'ఉత్పత్తి జోడండి',
-      processing: 'AI ఉత్పత్తిని గుర్తించింది...',
-      recognized: 'ఉత్పత్తి గుర్తించబడింది!',
-      manualInput: 'లేదా మానవల్గా టైప్ చేయండి'
-    }
   };
 
-  const currentLang = responses[selectedLanguage];
+  const handleTextSearch = (e) => {
+    e.preventDefault();
+    if (!textQuery.trim()) return;
+    simulateProcessing('text', textQuery);
+  };
+
+  const handleConfirm = () => {
+    onProductAdded({
+      ...productDetails,
+      available: true,
+      id: Date.now()
+    });
+    onClose();
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        className="bg-[#1A1A1A] rounded-[40px] w-full max-w-lg overflow-hidden border border-white/10 shadow-2xl"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="font-bold text-gray-800">{currentLang.title}</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
+        <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+              <Sparkles className="text-white" size={18} />
+            </div>
+            <div>
+              <h2 className="font-black text-white text-lg tracking-tight">AI Menu Generator</h2>
+              <p className="text-white/40 text-xs font-bold uppercase tracking-widest">Powered by Vendorify AI</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 text-white/40 hover:text-white rounded-full hover:bg-white/10 transition-all">
             <X size={24} />
           </button>
         </div>
 
-        {/* Language Selector */}
-        <div className="p-4 border-b border-gray-200">
-          <select
-            value={selectedLanguage}
-            onChange={(e) => setSelectedLanguage(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            {Object.entries(LANGUAGES).map(([code, lang]) => (
-              <option key={code} value={code}>
-                {lang.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Mode Switcher */}
+        {step === 'input' && (
+          <div className="p-2 mx-6 mt-6 bg-black/20 rounded-full flex relative">
+            <motion.div
+              className="absolute top-1 bottom-1 bg-[#2A2A2A] rounded-full shadow-lg"
+              initial={false}
+              animate={{
+                left: mode === 'photo' ? '4px' : '50%',
+                width: 'calc(50% - 4px)'
+              }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            />
+            <button
+              onClick={() => setMode('photo')}
+              className={`flex-1 relative z-10 py-3 text-sm font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors ${mode === 'photo' ? 'text-white' : 'text-white/40'}`}
+            >
+              <Camera size={16} /> Image
+            </button>
+            <button
+              onClick={() => setMode('text')}
+              className={`flex-1 relative z-10 py-3 text-sm font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors ${mode === 'text' ? 'text-white' : 'text-white/40'}`}
+            >
+              <Type size={16} /> Text
+            </button>
+          </div>
+        )}
 
-        {/* Step 1: Photo Capture */}
-        {step === 'photo' && (
-          <div className="p-6 space-y-4">
-            <div className="text-center">
-              <p className="text-gray-600 mb-4">{currentLang.photoStep}</p>
-              
-              {/* Photo Preview */}
-              {photo ? (
-                <div className="relative">
-                  <img
-                    src={photo}
-                    alt="Product"
-                    className="w-48 h-48 object-cover rounded-lg mx-auto"
-                  />
-                  {isProcessing && (
-                    <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                      <div className="text-white text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white mx-auto mb-2"></div>
-                        <p className="text-sm">{currentLang.processing}</p>
-                      </div>
-                    </div>
-                  )}
-                  {recognizedProduct && !isProcessing && (
-                    <div className="absolute top-2 right-2 bg-green-500 text-white p-2 rounded-full">
-                      <Check size={16} />
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="w-48 h-48 bg-gray-100 rounded-lg mx-auto flex items-center justify-center">
-                  <Camera size={48} className="text-gray-400" />
-                </div>
-              )}
-            </div>
+        <div className="p-8 min-h-[400px]">
+          <AnimatePresence mode="wait">
 
-            {/* Photo Actions */}
-            <div className="flex gap-3 justify-center">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handlePhotoCapture}
-                className="hidden"
-              />
-              
-              {!photo ? (
-                <button
+            {/* INPUT STEP */}
+            {step === 'input' && mode === 'photo' && (
+              <motion.div
+                key="photo-input"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="flex flex-col items-center justify-center h-full space-y-6 py-10"
+              >
+                <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700"
+                  className="w-48 h-48 rounded-[32px] border-4 border-dashed border-white/10 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-[#CDF546] hover:bg-white/5 transition-all group"
                 >
-                  <Camera size={20} />
-                  {currentLang.takePhoto}
-                </button>
-              ) : (
-                <>
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <ImageIcon className="text-white/60 group-hover:text-[#CDF546]" size={32} />
+                  </div>
+                  <p className="text-white/40 text-xs font-bold uppercase tracking-widest">Tap to Upload</p>
+                </div>
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoCapture} />
+                <p className="text-center text-white/60 max-w-xs text-sm">Upload a photo of your dish. Our AI will identify it and suggest details.</p>
+              </motion.div>
+            )}
+
+            {step === 'input' && mode === 'text' && (
+              <motion.div
+                key="text-input"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="flex flex-col h-full py-6"
+              >
+                <form onSubmit={handleTextSearch} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-white/40 text-xs font-bold uppercase tracking-widest">Dish Name</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={textQuery}
+                        onChange={(e) => setTextQuery(e.target.value)}
+                        placeholder="e.g. Butter Chicken"
+                        className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 text-white placeholder:text-white/20 focus:outline-none focus:border-[#CDF546] transition-colors font-medium text-lg"
+                        autoFocus
+                      />
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" size={20} />
+                    </div>
+                  </div>
+                  <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl">
+                    <div className="flex gap-3">
+                      <Sparkles className="text-indigo-400 shrink-0" size={20} />
+                      <p className="text-indigo-200 text-xs leading-relaxed">
+                        <strong className="block text-indigo-100 mb-1">AI Magic:</strong>
+                        Type any dish name. We'll find a high-quality image, write a description, and estimate calories for you automatically.
+                      </p>
+                    </div>
+                  </div>
                   <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700"
+                    type="submit"
+                    disabled={!textQuery}
+                    className="w-full bg-[#CDF546] disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 py-4 rounded-[20px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-[#CDF546]/20"
                   >
-                    <Camera size={20} />
-                    {currentLang.retakePhoto}
+                    Generate Menu Card
                   </button>
-                  {recognizedProduct && !isProcessing && (
-                    <button
-                      onClick={() => setStep('voice')}
-                      className="flex items-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
-                    >
-                      <Mic size={20} />
-                      {currentLang.speakDetails}
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        )}
+                </form>
+              </motion.div>
+            )}
 
-        {/* Step 2: Voice Input */}
-        {step === 'voice' && (
-          <div className="p-6 space-y-4">
-            <div className="text-center">
-              <p className="text-gray-600 mb-4">{currentLang.voiceStep}</p>
-              
-              {/* Product Preview */}
-              <div className="flex gap-4 mb-4">
-                <div className="w-24 h-24 rounded-lg overflow-hidden">
-                  <img
-                    src={photo}
-                    alt="Product"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="font-medium text-gray-800">{currentLang.recognized}</p>
-                  <p className="text-sm text-indigo-600">{recognizedProduct?.name}</p>
-                  <p className="text-xs text-gray-500">{recognizedProduct?.category}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Voice Recorder */}
-            <div className="space-y-3">
-              <VoiceRecorder
-                onTranscript={handleVoiceInput}
-                isListening={isListening}
-                setIsListening={setIsListening}
-                placeholder="Speak product name and price..."
-                language={selectedLanguage}
-              />
-              
-              {voiceInput && (
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">Heard: "{voiceInput}"</p>
-                </div>
-              )}
-            </div>
-
-            {/* Manual Input */}
-            <div className="space-y-3">
-              <p className="text-xs text-gray-500 text-center">{currentLang.manualInput}</p>
-              <input
-                type="text"
-                placeholder="Product name"
-                value={productDetails.name}
-                onChange={(e) => setProductDetails(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              <input
-                type="number"
-                placeholder="Price (₹)"
-                value={productDetails.price}
-                onChange={(e) => setProductDetails(prev => ({ ...prev, price: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => setStep('confirm')}
-                disabled={!productDetails.name || !productDetails.price}
-                className="flex-1 flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400"
+            {/* PROCESSING STEP */}
+            {step === 'processing' && (
+              <motion.div
+                key="processing"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col items-center justify-center h-full py-12"
               >
-                {currentLang.confirmAdd}
-              </button>
-              <button
-                onClick={resetForm}
-                className="flex items-center gap-2 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300"
-              >
-                <X size={20} />
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Confirmation */}
-        {step === 'confirm' && (
-          <div className="p-6 space-y-4">
-            <div className="text-center">
-              <p className="text-gray-600 mb-4">{currentLang.confirmStep}</p>
-            </div>
-
-            {/* Product Summary */}
-            <Card>
-              <CardContent className="p-4 space-y-3">
-                <div className="flex gap-4">
-                  <div className="w-20 h-20 rounded-lg overflow-hidden">
-                    <img
-                      src={photo}
-                      alt="Product"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-gray-800">{productDetails.name}</h4>
-                    <p className="text-sm text-gray-600">{productDetails.category}</p>
-                    <p className="text-lg font-bold text-indigo-600">₹{productDetails.price}</p>
+                <div className="relative mb-8">
+                  <div className="w-24 h-24 rounded-full border-4 border-white/10 border-t-[#CDF546] animate-spin" />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Sparkles className="text-[#CDF546] animate-pulse" size={32} />
                   </div>
                 </div>
-                {productDetails.description && (
-                  <p className="text-sm text-gray-600">{productDetails.description}</p>
-                )}
-              </CardContent>
-            </Card>
+                <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Analyzing...</h3>
+                <p className="text-white/40 text-sm font-medium">Extracting ingredients & photos</p>
+              </motion.div>
+            )}
 
-            {/* Actions */}
-            <div className="flex gap-3">
-              <button
-                onClick={handleAddProduct}
-                className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
+            {/* CONFIRM STEP */}
+            {step === 'confirm' && productDetails && (
+              <motion.div
+                key="confirm"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-6"
               >
-                <Plus size={20} />
-                {currentLang.confirmAdd}
-              </button>
-              <button
-                onClick={() => setStep('voice')}
-                className="flex items-center gap-2 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300"
-              >
-                <AlertCircle size={20} />
-                Edit
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+                <div className="bg-white/5 border border-white/10 rounded-[32px] overflow-hidden">
+                  <div className="h-48 relative">
+                    <img src={productDetails.image} alt={productDetails.name} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4 text-white">
+                      <h3 className="text-2xl font-black uppercase tracking-tight">{productDetails.name}</h3>
+                      <p className="text-white/60 text-sm">{productDetails.category}</p>
+                    </div>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div className="flex flex-col">
+                        <label className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Price</label>
+                        <input
+                          type="number"
+                          value={productDetails.price}
+                          onChange={(e) => setProductDetails({ ...productDetails, price: e.target.value })}
+                          className="bg-transparent text-2xl font-black text-[#CDF546] outline-none w-32"
+                        />
+                      </div>
+                      {productDetails.cal && (
+                        <div className="px-3 py-1 bg-white/10 rounded-lg text-xs font-bold text-white/60">
+                          {productDetails.cal}
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-white/40 uppercase tracking-widest">Description</label>
+                      <textarea
+                        value={productDetails.description}
+                        onChange={(e) => setProductDetails({ ...productDetails, description: e.target.value })}
+                        className="w-full bg-transparent text-white/80 text-sm leading-relaxed outline-none resize-none h-20"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setStep('input')}
+                    className="flex-1 py-4 rounded-[24px] font-black uppercase tracking-widest text-white/60 hover:bg-white/10 transition-colors bg-white/5"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    onClick={handleConfirm}
+                    className="flex-[2] py-4 rounded-[24px] font-black uppercase tracking-widest text-gray-900 bg-[#CDF546] hover:scale-105 transition-transform shadow-lg shadow-[#CDF546]/20 flex items-center justify-center gap-2"
+                  >
+                    <Check size={18} /> Approve
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+          </AnimatePresence>
+        </div>
+      </motion.div>
     </div>
   );
 };

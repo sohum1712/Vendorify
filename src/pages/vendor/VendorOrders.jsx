@@ -1,145 +1,173 @@
-import React, { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, XCircle, Clock, Package, MessageCircle, ArrowUpRight, ShoppingBag } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useAppData } from '../../context/AppDataContext';
-import Navbar from '../../components/common/Navbar';
-import { Footer } from '../../components/common/Footer';
+import { Check, Clock, Package, Truck, X } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const VendorOrders = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { getOrdersForVendor, updateOrderStatus } = useAppData();
+  const { socket } = useAuth();
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [vendorId, setVendorId] = useState(null);
 
-  const vendorId = useMemo(() => {
-    if (user && user.role === 'vendor' && user.vendorId) return user.vendorId;
-    return 1;
-  }, [user]);
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-  const orders = getOrdersForVendor(vendorId);
+  const fetchOrders = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('vendorify_token');
+      const res = await fetch(`${API_URL}/orders`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data);
+      }
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [API_URL]);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'NEW': return 'bg-[#CDF546] text-gray-900 shadow-[0_0_20px_rgba(205,245,70,0.3)]';
-      case 'ACCEPTED': return 'bg-[#1A6950] text-white';
-      case 'COMPLETED': return 'bg-gray-100 text-gray-400';
-      case 'REJECTED': return 'bg-red-50 text-red-400';
-      default: return 'bg-gray-100 text-gray-400';
+  const fetchVendorProfile = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('vendorify_token');
+      const res = await fetch(`${API_URL}/vendors/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setVendorId(data._id);
+        fetchOrders();
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    }
+  }, [API_URL, fetchOrders]);
+
+  useEffect(() => {
+    fetchVendorProfile();
+  }, [fetchVendorProfile]);
+
+  useEffect(() => {
+    if (socket && vendorId) {
+      socket.emit('join_vendor_room', vendorId);
+
+      const handleNewOrder = (newOrder) => {
+        toast.info(`New Order received! Total: ₹${newOrder.totalAmount}`);
+        setOrders(prev => [newOrder, ...prev]);
+      };
+
+      socket.on('new_order', handleNewOrder);
+
+      return () => {
+        socket.off('new_order', handleNewOrder);
+      };
+    }
+  }, [socket, vendorId]);
+
+  const updateStatus = async (orderId, newStatus) => {
+    try {
+      const token = localStorage.getItem('vendorify_token');
+      const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (res.ok) {
+        toast.success(`Order marked as ${newStatus}`);
+        setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
+      } else {
+        toast.error('Failed to update status');
+      }
+    } catch (err) {
+      console.error('Update status error:', err);
     }
   };
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'confirmed': return 'bg-blue-100 text-blue-800';
+      case 'preparing': return 'bg-purple-100 text-purple-800';
+      case 'ready': return 'bg-indigo-100 text-indigo-800';
+      case 'delivered': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (loading) return <div className="p-8 text-center">Loading orders...</div>;
+
   return (
-    <div className="min-h-screen bg-[#FDF9DC] font-sans selection:bg-[#CDF546]">
-      <Navbar role="vendor" />
-      
-      <div className="max-w-7xl mx-auto px-6 pt-32 pb-20">
-        <div className="flex items-center gap-6 mb-12">
-          <button 
-            onClick={() => navigate('/vendor')}
-            className="w-12 h-12 rounded-2xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:shadow-xl transition-all"
-          >
-            <ArrowLeft size={20} />
-          </button>
-          <div>
-            <h1 className="text-4xl font-heading font-black text-gray-900 uppercase tracking-tight">Order Management</h1>
-            <p className="text-gray-400 font-bold text-[11px] uppercase tracking-[0.3em] mt-1">Track and process your sales</p>
-          </div>
-        </div>
+    <div className="p-6">
+      <h2 className="text-2xl font-bold mb-6">Order Management</h2>
 
-        {!orders.length ? (
-          <div className="bg-white rounded-[48px] p-20 text-center border border-gray-100 shadow-sm">
-            <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-8">
-              <ShoppingBag className="text-gray-200" size={40} />
-            </div>
-            <h3 className="text-2xl font-heading font-black text-gray-900 uppercase">No orders yet</h3>
-            <p className="text-gray-400 font-medium mt-2">When customers place orders, they'll appear here.</p>
-          </div>
+      <div className="space-y-4">
+        {orders.length === 0 ? (
+          <div className="text-center text-gray-500 py-10">No orders yet.</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <AnimatePresence>
-              {orders.map((o, idx) => (
-                <motion.div 
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  key={o.id}
-                  className="bg-white rounded-[40px] p-8 border border-gray-100 shadow-sm hover:shadow-2xl transition-all duration-500 group relative overflow-hidden"
-                >
-                  <div className="flex justify-between items-start mb-8">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Customer Name</p>
-                      <h4 className="text-2xl font-black uppercase tracking-tight text-gray-900 group-hover:text-[#1A6950] transition-colors">
-                        {o.customerName}
-                      </h4>
-                      <div className="flex items-center gap-2 text-[10px] font-bold text-gray-300 uppercase tracking-widest pt-1">
-                        <Clock size={12} />
-                        {new Date(o.createdAt).toLocaleString()}
-                      </div>
+          orders.map(order => (
+            <div key={order._id} className="bg-white p-4 rounded-lg shadow border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="font-semibold text-lg">#{order._id.slice(-6).toUpperCase()}</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium uppercase ${getStatusColor(order.status)}`}>
+                    {order.status}
+                  </span>
+                  <span className="text-gray-500 text-sm">
+                    {new Date(order.createdAt).toLocaleString()}
+                  </span>
+                </div>
+                <div className="text-gray-700">
+                  {order.items.map((item, idx) => (
+                    <div key={idx}>
+                      {item.quantity} x {item.name || 'Item'} (₹{item.price})
                     </div>
-                    <span className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${getStatusColor(o.status)}`}>
-                      {o.status}
-                    </span>
-                  </div>
+                  ))}
+                </div>
+                <div className="mt-2 font-bold text-gray-900">
+                  Total: ₹{order.totalAmount}
+                </div>
+                <div className="text-sm text-gray-500 mt-1">
+                  {order.deliveryAddress}
+                </div>
+              </div>
 
-                  <div className="space-y-3 mb-8">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-4">Order Summary</p>
-                    {o.items.map((it) => (
-                      <div key={it.id} className="flex justify-between items-center bg-gray-50 p-4 rounded-2xl group-hover:bg-white transition-colors">
-                        <span className="font-black text-gray-900 uppercase tracking-tight text-xs">{it.name} <span className="text-[#1A6950]">× {it.qty}</span></span>
-                        <span className="font-bold text-gray-900">₹{it.price * it.qty}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center justify-between pt-8 border-t border-gray-50">
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-1">Total Amount</p>
-                      <span className="text-3xl font-black text-gray-900">₹{o.total}</span>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      {o.status === 'NEW' && (
-                        <>
-                          <button
-                            onClick={() => updateOrderStatus({ orderId: o.id, status: 'ACCEPTED' })}
-                            className="bg-[#1A6950] text-white px-8 py-4 rounded-[20px] font-black text-xs uppercase tracking-widest shadow-lg shadow-[#1A6950]/20 hover:scale-105 transition-all flex items-center gap-2"
-                          >
-                            <CheckCircle2 size={16} />
-                            Accept
-                          </button>
-                          <button
-                            onClick={() => updateOrderStatus({ orderId: o.id, status: 'REJECTED' })}
-                            className="bg-red-50 text-red-400 p-4 rounded-[20px] hover:bg-red-500 hover:text-white transition-all"
-                          >
-                            <XCircle size={20} />
-                          </button>
-                        </>
-                      )}
-
-                      {o.status === 'ACCEPTED' && (
-                        <button
-                          onClick={() => updateOrderStatus({ orderId: o.id, status: 'COMPLETED' })}
-                          className="bg-[#CDF546] text-gray-900 px-8 py-4 rounded-[20px] font-black text-xs uppercase tracking-widest shadow-lg shadow-[#CDF546]/20 hover:scale-105 transition-all flex items-center gap-2"
-                        >
-                          <Package size={16} />
-                          Complete
-                        </button>
-                      )}
-                      
-                      <button className="bg-white border border-gray-100 p-4 rounded-[20px] text-gray-400 hover:text-gray-900 transition-all">
-                        <MessageCircle size={20} />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
+              <div className="flex flex-wrap gap-2">
+                {order.status === 'pending' && (
+                  <>
+                    <button onClick={() => updateStatus(order._id, 'confirmed')} className="flex items-center gap-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                      <Check size={16} /> Confirm
+                    </button>
+                    <button onClick={() => updateStatus(order._id, 'cancelled')} className="flex items-center gap-1 bg-red-100 text-red-600 px-4 py-2 rounded hover:bg-red-200">
+                      <X size={16} /> Reject
+                    </button>
+                  </>
+                )}
+                {order.status === 'confirmed' && (
+                  <button onClick={() => updateStatus(order._id, 'preparing')} className="flex items-center gap-1 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+                    <Clock size={16} /> Start Preparing
+                  </button>
+                )}
+                {order.status === 'preparing' && (
+                  <button onClick={() => updateStatus(order._id, 'ready')} className="flex items-center gap-1 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+                    <Package size={16} /> Mark Ready
+                  </button>
+                )}
+                {order.status === 'ready' && (
+                  <button onClick={() => updateStatus(order._id, 'delivered')} className="flex items-center gap-1 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                    <Truck size={16} /> Delivered
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
         )}
       </div>
-      <Footer />
     </div>
   );
 };

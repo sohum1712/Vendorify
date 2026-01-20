@@ -1,5 +1,4 @@
 import React, { useRef } from "react";
-import { motion } from "framer-motion";
 
 export default function CategoriesCarousel() {
   const ref = useRef(null);

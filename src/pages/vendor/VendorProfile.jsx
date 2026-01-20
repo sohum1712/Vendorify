@@ -1,15 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppData } from '../../context/AppDataContext';
-import { 
-  ArrowLeft, 
-  Store, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Star, 
-  Clock, 
-  TrendingUp,
+import {
+  Store,
+  MapPin,
+  Star,
+  Clock,
   Edit,
   Camera,
   Package,
@@ -20,18 +16,16 @@ import {
   Award,
   LogOut
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../../context/AuthContext';
+
 import Navbar from '../../components/common/Navbar';
 import { Footer } from '../../components/common/Footer';
 
 const VendorProfile = () => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
   const { getVendorById, getOrdersForVendor } = useAppData();
   const [activeTab, setActiveTab] = useState('overview');
 
-  const vendorId = 1; // Static for demo
+  const vendorId = 1;
   const vendor = getVendorById(vendorId);
   const orders = getOrdersForVendor(vendorId);
   const completedOrders = orders.filter(o => o.status === 'COMPLETED');
@@ -56,10 +50,9 @@ const VendorProfile = () => {
   return (
     <div className="min-h-screen bg-[#FDF9DC] font-sans selection:bg-[#CDF546]">
       <Navbar role="vendor" />
-      
+
       <div className="max-w-7xl mx-auto px-6 pt-32 pb-20">
         <div className="flex flex-col md:flex-row gap-12">
-          {/* Profile Sidebar */}
           <div className="md:w-1/3 space-y-8">
             <div className="bg-white rounded-[56px] p-12 border border-gray-100 shadow-sm relative overflow-hidden text-center">
               <div className="relative inline-block mb-8">
@@ -70,17 +63,17 @@ const VendorProfile = () => {
                   <Camera size={20} />
                 </button>
               </div>
-              
+
               <h1 className="text-3xl font-heading font-black text-gray-900 uppercase tracking-tight mb-2">{vendorDetails.name}</h1>
               <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em] mb-8">Verified Vendor Since {vendorDetails.established}</p>
-              
+
               <div className="flex items-center justify-center gap-3 bg-[#CDF546]/20 py-3 px-6 rounded-2xl text-[#1A6950] font-black text-[10px] uppercase tracking-widest border border-[#CDF546]/30 mb-8">
                 <ShieldCheck size={16} />
                 Premium Shop
               </div>
 
-              <button 
-                onClick={logout}
+              <button
+                onClick={() => navigate('/')}
                 className="w-full flex items-center justify-center gap-3 py-4 text-red-500 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-red-50 rounded-2xl transition-all"
               >
                 <LogOut size={16} />
@@ -105,7 +98,6 @@ const VendorProfile = () => {
             </div>
           </div>
 
-          {/* Main Content */}
           <div className="md:w-2/3 space-y-8">
             <div className="bg-white rounded-[56px] p-10 md:p-14 border border-gray-100 shadow-sm">
               <div className="flex gap-4 mb-12 overflow-x-auto pb-4">
@@ -113,11 +105,10 @@ const VendorProfile = () => {
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-8 py-4 rounded-[24px] font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${
-                      activeTab === tab
-                        ? 'bg-[#1A6950] text-white shadow-xl shadow-[#1A6950]/20'
-                        : 'bg-gray-50 text-gray-400 hover:text-gray-900'
-                    }`}
+                    className={`px-8 py-4 rounded-[24px] font-black text-[10px] uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab
+                      ? 'bg-[#1A6950] text-white shadow-xl shadow-[#1A6950]/20'
+                      : 'bg-gray-50 text-gray-400 hover:text-gray-900'
+                      }`}
                   >
                     {tab}
                   </button>
@@ -186,7 +177,7 @@ const VendorProfile = () => {
                     </div>
                   </div>
                 )}
-                
+
                 {activeTab === 'documents' && (
                   <div className="space-y-4">
                     <h3 className="text-2xl font-heading font-black text-gray-900 uppercase tracking-tight">Compliance & Trust</h3>

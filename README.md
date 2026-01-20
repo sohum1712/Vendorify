@@ -1,89 +1,102 @@
-# Vendorify
+# Vendorify - Premium Hyperlocal Vendor Platform
 
-A modern vendor management platform built with React.js that connects customers with local service providers.
+Vendorify is a comprehensive MERN-stack application designed to connect local vendors with customers through a seamless, real-time interface. It features text-based location management, real-time order tracking, and AI-powered menu generation.
 
-## Features
+## 🚀 Key Features
 
-- **Customer Dashboard**: Browse and book services from local vendors
-- **Admin Dashboard**: Manage vendors, services, and platform operations
-- **Interactive Maps**: Find vendors near your location
-- **Modern UI**: Built with Tailwind CSS and Lucide React icons
-- **Responsive Design**: Works seamlessly on desktop and mobile devices
+### For Customers
+- **Real-time Discovery**: Find vendors nearby using text-based search or categories.
+- **Live Order Tracking**: Watch your order status update in real-time (Pending → Preparing → Delivered).
+- **Interactive Dashboard**: View order history, nearby deals, and roaming vendors.
 
-## Tech Stack
+### For Vendors
+- **Business Profile**: Manage shop details, photos, and operational hours.
+- **Order Management**: Accept/Reject orders and update status instantly.
+- **AI Menu Builder**: Generate menu items with descriptions and prices using Gemini AI.
+- **Performance Analytics**: Track earnings and ratings.
 
-- **Frontend**: React 18.2.0
-- **Routing**: React Router DOM 6.18.0
-- **Styling**: Tailwind CSS 3.3.3
-- **Icons**: Lucide React 0.263.1
-- **Notifications**: React Toastify 10.0.4
-- **Build Tool**: Create React App
+## 🛠 Tech Stack
 
-## Getting Started
+### Frontend
+- **Framework**: React 18, React Router v6
+- **Styling**: Tailwind CSS, Framer Motion (Animations)
+- **State/Context**: Context API (Auth & App Data)
+- **Real-time**: Socket.io Client
+- **UI Components**: Lucide React, React Toastify
+
+### Backend
+- **Runtime**: Node.js, Express.js
+- **Database**: MongoDB (Mongoose)
+- **Security**: Helmet, Compression, Rate Limiting, JWT Auth
+- **Real-time**: Socket.io Server
+- **AI**: Google Gemini API
+
+## 📦 Installation & Setup
 
 ### Prerequisites
+- Node.js (v14+)
+- MongoDB (Local or Atlas URI)
 
-- Node.js (version 14 or higher)
-- npm or yarn
-
-### Installation
-
-1. Clone the repository:
+### 1. Clone & Install
 ```bash
 git clone https://github.com/Kum4rX/Vendorify.git
 cd Vendorify
-```
 
-2. Install dependencies:
-```bash
+# Install Frontend Dependencies
+npm install
+
+# Install Backend Dependencies
+cd server
 npm install
 ```
 
-3. Start the development server:
+### 2. Environment Configuration
+Create a `.env` file in the `server` directory:
+```env
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/vendorify
+JWT_SECRET=your_super_secret_key_here
+GEMINI_API_KEY=your_google_ai_key
+```
+
+### 3. Running the Application
+You need to run both the backend and frontend servers.
+
+**Terminal 1 (Backend):**
 ```bash
+cd server
+node index.js
+```
+*Server runs on http://localhost:5000*
+
+**Terminal 2 (Frontend):**
+```bash
+# Return to root if in server dir
+cd ..
 npm start
 ```
+*App runs on http://localhost:3000*
 
-The application will open in your default browser at `http://localhost:3000`.
+## 🔒 Security & Performance
+- **Helmet**: Secures HTTP headers.
+- **Compression**: Gzip compression for faster API responses.
+- **Rate Limiting**: Protects against brute-force attacks (100 req/15min).
+- **Validation**: Strict input validation on all API routes.
 
-### Available Scripts
-
-- `npm start` - Runs the app in development mode
-- `npm test` - Launches the test runner
-- `npm run build` - Builds the app for production
-- `npm run eject` - Ejects from Create React App (one-way operation)
-
-## Project Structure
-
+## 📂 Project Structure
 ```
-src/
-├── components/
-│   └── common/          # Reusable UI components
-├── context/
-│   └── AuthContext.js   # Authentication context
-├── constants/
-│   └── roles.js         # User role definitions
-├── pages/
-│   ├── AdminDashboard.jsx
-│   ├── CustomerDashboard.jsx
-│   └── LandingPage.jsx
-├── App.js               # Main application component
-├── index.css            # Global styles
-└── index.js             # Application entry point
+├── server/                 # Express Backend
+│   ├── models/             # Mongoose Schemas (User, Vendor, Order)
+│   ├── routes/             # API Routes
+│   ├── controllers/        # Business Logic
+│   └── index.js            # Entry Point & Socket Setup
+│
+└── src/                    # React Frontend
+    ├── components/         # Reusable UI Components
+    ├── context/            # Global State (Auth, Socket, Data)
+    ├── pages/              # Customer & Vendor Dashboards
+    └── assets/             # Images & Icons
 ```
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Contact
-
-Project Link: [https://github.com/Kum4rX/Vendorify](https://github.com/Kum4rX/Vendorify)
+## 📄 License
+MIT License. Built with ❤️ for the community.
