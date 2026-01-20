@@ -2,13 +2,18 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useNavigate } from 'react-router-dom';
 import { ROLES } from '../constants/roles';
 
+import { io } from 'socket.io-client';
+
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// Socket URL is usually the base URL without /api
+const SOCKET_URL = API_URL.replace('/api', '');
 
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [socket, setSocket] = useState(null);
   const navigate = useNavigate();
 
   const fetchCurrentUser = useCallback(async () => {
@@ -56,6 +61,42 @@ export const AuthProvider = ({ children }) => {
     fetchCurrentUser();
   }, [fetchCurrentUser]);
 
+  // Socket Connection Management
+  useEffect(() => {
+    if (user && user.id !== 'guest') {
+      const newSocket = io(SOCKET_URL);
+
+      newSocket.on('connect', () => {
+        console.log('Socket Connected:', newSocket.id);
+        if (user.role === ROLES.VENDOR) {
+          // Determine vendorId (assuming backend might need to know which vendor doc to join)
+          // However, our backend join logic expects distinct IDs.
+          // The backend listens for 'join_vendor_room' with 'vendorId'. 
+          // Currently user object might not have vendorId directly if it's just the User doc.
+          // But let's assume for now we join with user.id, awaiting backend alignment or 
+          // we fetch vendor profile to get actual vendorId.
+          // Verification script showed we need the VENDOR DOC ID.
+          // So we should probably fetch that or store it in user object.
+          // For now, let's join with user.id as a fallback or if backend handles it.
+          // WAIT, earlier verification showed we need profileRes.data._id. 
+          // So we need to fetch the vendor profile to join the room correct?
+          // Or maybe we can just join room `user_${user.id}`?
+          // The backend code: socket.join(`vendor_${vendorId}`);
+          // So we definitely need the vendorId.
+          // Let's rely on the VendorDashboard to emit the join event with the correct ID 
+          // once it fetches the profile. 
+          // But providing the socket instance here is the main goal.
+        } else if (user.role === ROLES.CUSTOMER) {
+          newSocket.emit('join_customer_room', user.id);
+        }
+      });
+
+      setSocket(newSocket);
+
+      return () => newSocket.disconnect();
+    }
+  }, [user]);
+
   const register = async (userData) => {
     try {
       setLoading(true);
@@ -71,7 +112,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('vendorify_token', data.token);
       localStorage.setItem('vendorify_user', JSON.stringify(data.user));
       setUser(data.user);
-      
+
       const redirectPath =
         data.user.role === ROLES.ADMIN ? '/admin' :
           data.user.role === ROLES.VENDOR ? '/vendor' :
@@ -93,13 +134,13 @@ export const AuthProvider = ({ children }) => {
       // Support both (email, password) and (roleObject) for backward compatibility if needed
       let body;
       if (typeof email === 'object') {
-         // Mock login if object passed (not recommended but for safety)
-         const role = email.role || ROLES.CUSTOMER;
-         const mockUser = { id: 'mock', name: 'Mock', email: 'mock@test.com', role };
-         setUser(mockUser);
-         localStorage.setItem('vendorify_user', JSON.stringify(mockUser));
-         navigate(role === ROLES.VENDOR ? '/vendor' : '/customer');
-         return { success: true };
+        // Mock login if object passed (not recommended but for safety)
+        const role = email.role || ROLES.CUSTOMER;
+        const mockUser = { id: 'mock', name: 'Mock', email: 'mock@test.com', role };
+        setUser(mockUser);
+        localStorage.setItem('vendorify_user', JSON.stringify(mockUser));
+        navigate(role === ROLES.VENDOR ? '/vendor' : '/customer');
+        return { success: true };
       } else {
         body = JSON.stringify({ email, password });
       }
@@ -165,7 +206,8 @@ export const AuthProvider = ({ children }) => {
         logout,
         updateUser,
         hasRole,
-        isAuthenticated: user && user.id !== 'guest'
+        isAuthenticated: user && user.id !== 'guest',
+        socket
       }}
     >
       {!loading && children}

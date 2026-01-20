@@ -4,6 +4,9 @@ const vendorController = require('../controllers/vendorController');
 
 const { protect } = require('../middleware/authMiddleware');
 
+// Search Route
+router.get('/search', vendorController.searchVendors);
+
 // Profile Routes
 router.get('/profile', protect, vendorController.getVendorProfile);
 router.put('/profile', protect, vendorController.updateVendorProfile);

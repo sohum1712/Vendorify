@@ -3,9 +3,10 @@ const Product = require('../models/Product');
 
 // --- Vendor Profile Controllers ---
 
+const VendorProfileHistory = require('../models/VendorProfileHistory');
+
 exports.getVendorProfile = async (req, res) => {
     try {
-        // Assuming user ID is attached to req by auth middleware
         const vendor = await Vendor.findOne({ userId: req.user.id });
         if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
         res.json(vendor);
@@ -16,12 +17,24 @@ exports.getVendorProfile = async (req, res) => {
 
 exports.updateVendorProfile = async (req, res) => {
     try {
-        const vendor = await Vendor.findOneAndUpdate(
+        const vendor = await Vendor.findOne({ userId: req.user.id });
+
+        if (vendor) {
+            // Save history before update
+            await VendorProfileHistory.create({
+                vendorId: vendor._id,
+                snapshotData: vendor.toObject(),
+                reason: 'Profile Update'
+            });
+        }
+
+        const updatedVendor = await Vendor.findOneAndUpdate(
             { userId: req.user.id },
             req.body,
             { new: true, upsert: true } // Create if doesn't exist
         );
-        res.json(vendor);
+
+        res.json(updatedVendor);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -29,23 +42,49 @@ exports.updateVendorProfile = async (req, res) => {
 
 exports.updateLocation = async (req, res) => {
     try {
-        const { lat, lng } = req.body;
-        const vendor = await Vendor.findOneAndUpdate(
-            { userId: req.user.id },
-            {
-                location: {
-                    type: 'Point',
-                    coordinates: [lng, lat]
-                }
-            },
-            { new: true }
-        );
-        // Emit Socket.IO event for real-time tracking
-        if (req.io) {
-            req.io.emit('vendor_location_update', { vendorId: vendor._id, lat, lng });
+        const { address } = req.body;
+
+        if (!address) {
+            return res.status(400).json({ message: 'Address is required' });
         }
 
-        res.json({ message: 'Location updated' });
+        const vendor = await Vendor.findOneAndUpdate(
+            { userId: req.user.id },
+            { address },
+            { new: true }
+        );
+
+        if (!vendor) {
+            return res.status(404).json({ message: 'Vendor not found' });
+        }
+
+        // Emit Socket.IO event for real-time tracking (if needed for address change)
+        if (req.io) {
+            req.io.emit('vendor_location_update', { vendorId: vendor._id, address });
+        }
+
+        res.json({ message: 'Location updated', address: vendor.address });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+exports.searchVendors = async (req, res) => {
+    try {
+        const { query } = req.query;
+        if (!query) {
+            return res.status(400).json({ message: 'Search query is required' });
+        }
+
+        // Text search on address and shopName
+        const vendors = await Vendor.find(
+            { $text: { $search: query } },
+            { score: { $meta: "textScore" } }
+        )
+            .sort({ score: { $meta: "textScore" } })
+            .limit(20);
+
+        res.json(vendors);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

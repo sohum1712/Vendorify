@@ -53,6 +53,7 @@ exports.register = async (req, res) => {
             res.status(400).json({ message: 'Invalid user data' });
         }
     } catch (err) {
+        console.error('Registration Error:', err);
         res.status(500).json({ error: err.message });
     }
 };

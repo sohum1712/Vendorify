@@ -92,7 +92,7 @@ const VendorDashboard = () => {
           </div>
         )}
 
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16 relative z-30">
           <div className="flex items-center gap-8 group">
             <motion.div
               initial={{ scale: 0.8, rotate: -10 }}

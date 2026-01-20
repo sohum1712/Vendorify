@@ -4,65 +4,74 @@ const orderItemSchema = new mongoose.Schema({
     productId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product',
+        required: true
     },
-    name: { type: String, required: true },
-    price: { type: Number, required: true },
-    quantity: { type: Number, required: true, default: 1 },
+    name: String,
+    quantity: {
+        type: Number,
+        required: true,
+        min: 1
+    },
+    price: {
+        type: Number,
+        required: true
+    }
+}, { _id: false });
+
+const orderStatusHistorySchema = new mongoose.Schema({
+    status: {
+        type: String,
+        required: true,
+        enum: ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled']
+    },
+    timestamp: {
+        type: Date,
+        default: Date.now
+    },
+    note: String
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
+    customerId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
     vendorId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Vendor',
-        required: true,
-    },
-    customerId: {
-        type: String,
-        required: true,
-    },
-    customerName: {
-        type: String,
-        required: true,
-    },
-    customerPhone: String,
-    customerLocation: {
-        type: { type: String, default: 'Point' },
-        coordinates: [Number],
-        address: String,
+        required: true
     },
     items: [orderItemSchema],
-    total: {
+    totalAmount: {
         type: Number,
-        required: true,
+        required: true
     },
     status: {
         type: String,
-        enum: ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'],
-        default: 'PENDING',
+        enum: ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'],
+        default: 'pending'
     },
-    paymentMethod: {
+    deliveryAddress: {
         type: String,
-        enum: ['CASH', 'UPI', 'WHATSAPP'],
-        default: 'CASH',
+        required: true
     },
-    notes: String,
-    createdAt: {
-        type: Date,
-        default: Date.now,
+    paymentStatus: {
+        type: String,
+        enum: ['pending', 'paid', 'failed'],
+        default: 'pending'
     },
-    updatedAt: {
-        type: Date,
-        default: Date.now,
-    },
-});
+    history: [orderStatusHistorySchema]
+}, { timestamps: true });
 
-orderSchema.index({ vendorId: 1, createdAt: -1 });
-orderSchema.index({ customerId: 1, createdAt: -1 });
-orderSchema.index({ status: 1 });
-
-orderSchema.pre('save', function(next) {
-    this.updatedAt = new Date();
-    next();
+// Add initial history entry on creation
+orderSchema.pre('save', function () {
+    if (this.isNew) {
+        this.history.push({
+            status: this.status,
+            note: 'Order created'
+        });
+    }
 });
 
 module.exports = mongoose.model('Order', orderSchema);

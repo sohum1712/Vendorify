@@ -19,7 +19,7 @@ const dealSchema = new mongoose.Schema({
 
 const vendorSchema = new mongoose.Schema({
     userId: {
-        type: String,
+        type: String, // Storing reference to User model's _id (as string or ObjectId if compatible, but keeping String as per existing)
         required: true,
         unique: true,
     },
@@ -30,13 +30,20 @@ const vendorSchema = new mongoose.Schema({
     ownerName: String,
     phone: String,
     email: String,
-    address: String,
-    location: {
-        type: { type: String, default: 'Point' },
-        coordinates: [Number],
+    address: {
+        type: String,
+        required: true,
+        index: true // Enable text search on this field if needed, or use text index
     },
-    image: String,
-    gallery: [String],
+    shopPhotos: [String], // Array of image URLs
+    services: [String], // Array of services offered
+
+    // Removing GeoJSON location as per new requirements
+    // location: { ... }, 
+
+    image: String, // Main profile image
+    gallery: [String], // Kept for backward compatibility or alias to shopPhotos
+
     category: {
         type: String,
         enum: ['food', 'beverages', 'fruits', 'grocery', 'fashion', 'electronics', 'services', 'other'],
@@ -72,9 +79,9 @@ const vendorSchema = new mongoose.Schema({
     },
 });
 
-vendorSchema.index({ location: '2dsphere' });
+// Text index for address search
+vendorSchema.index({ address: 'text', shopName: 'text' });
 vendorSchema.index({ category: 1 });
 vendorSchema.index({ isOnline: 1 });
-vendorSchema.index({ 'schedule.isRoaming': 1 });
 
 module.exports = mongoose.model('Vendor', vendorSchema);

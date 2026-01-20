@@ -6,8 +6,11 @@ import Navbar from '../components/common/Navbar';
 import CategoriesCarousel from '../components/CategoriesCarousel';
 import { Footer } from '../components/common/Footer';
 
+import { useAuth } from '../context/AuthContext';
+
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, user, loading } = useAuth();
 
   const handleContinue = (role) => {
     if (role === ROLES.CUSTOMER) {
@@ -17,14 +20,35 @@ const LandingPage = () => {
     }
   };
 
+  const handleDashboardRedirect = () => {
+    if (user?.role === ROLES.VENDOR) navigate('/vendor');
+    else if (user?.role === ROLES.CUSTOMER) navigate('/customer');
+    else if (user?.role === ROLES.ADMIN) navigate('/admin');
+  };
+
+  if (loading) return null; // Or a spinner
+
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
       <div id="hero">
-        <Hero 
-          onContinueCustomer={() => handleContinue(ROLES.CUSTOMER)}
-          onContinueVendor={() => handleContinue(ROLES.VENDOR)}
-        />
+        {isAuthenticated ? (
+          <div className="min-h-[60vh] flex flex-col items-center justify-center bg-[#FDF9DC] px-6 text-center">
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900">Welcome Back, {user?.name}!</h1>
+            <p className="text-xl text-gray-600 mb-8">You are already logged in.</p>
+            <button
+              onClick={handleDashboardRedirect}
+              className="bg-[#1A6950] text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-[#145a44] transition-all"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        ) : (
+          <Hero
+            onContinueCustomer={() => handleContinue(ROLES.CUSTOMER)}
+            onContinueVendor={() => handleContinue(ROLES.VENDOR)}
+          />
+        )}
       </div>
       <CategoriesCarousel />
       <Footer />
