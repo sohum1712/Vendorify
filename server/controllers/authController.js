@@ -2,10 +2,25 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
 // Generate JWT
-const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, {
-        expiresIn: '30d',
-    });
+const generateToken = (userId, role) => {
+    return jwt.sign(
+        { userId, role }, 
+        process.env.JWT_SECRET || 'fallback_secret_key_for_development', 
+        {
+            expiresIn: process.env.JWT_EXPIRE || '7d',
+        }
+    );
+};
+
+// Validate email format
+const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+};
+
+// Validate password strength
+const isValidPassword = (password) => {
+    return password && password.length >= 6;
 };
 
 // @desc    Register new user
@@ -15,46 +30,100 @@ exports.register = async (req, res) => {
     try {
         const { name, email, password, role, mobile } = req.body;
 
-        if (!name || (!email && !mobile) || !password) {
-            return res.status(400).json({ message: 'Please provide name, password and either email or mobile' });
+        // Validation
+        if (!name || !name.trim()) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Name is required' 
+            });
+        }
+
+        if (!email && !mobile) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Email or mobile number is required' 
+            });
+        }
+
+        if (email && !isValidEmail(email)) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Please provide a valid email address' 
+            });
+        }
+
+        if (!isValidPassword(password)) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Password must be at least 6 characters long' 
+            });
+        }
+
+        if (role && !['customer', 'vendor', 'admin'].includes(role)) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Invalid role specified' 
+            });
         }
 
         // Check if user exists
-        const userExists = await User.findOne({
+        const existingUser = await User.findOne({
             $or: [
-                { email: email || undefined },
-                { mobile: mobile || undefined }
+                ...(email ? [{ email: email.toLowerCase() }] : []),
+                ...(mobile ? [{ mobile }] : [])
             ]
         });
 
-        if (userExists) {
-            return res.status(400).json({ message: 'User already exists' });
+        if (existingUser) {
+            const field = existingUser.email === email?.toLowerCase() ? 'email' : 'mobile number';
+            return res.status(409).json({ 
+                success: false,
+                message: `An account with this ${field} already exists` 
+            });
         }
 
         // Create user
         const user = await User.create({
-            name,
-            email: email || undefined,
+            name: name.trim(),
+            email: email ? email.toLowerCase() : undefined,
             mobile: mobile || undefined,
             password,
             role: role || 'customer'
         });
 
-        if (user) {
-            res.status(201).json({
-                _id: user.id,
+        // Generate token
+        const token = generateToken(user._id, user.role);
+
+        res.status(201).json({
+            success: true,
+            message: 'Account created successfully',
+            user: {
+                id: user._id,
                 name: user.name,
                 email: user.email,
                 mobile: user.mobile,
                 role: user.role,
-                token: generateToken(user._id),
-            });
-        } else {
-            res.status(400).json({ message: 'Invalid user data' });
-        }
+                createdAt: user.createdAt
+            },
+            token
+        });
+
     } catch (err) {
         console.error('Registration Error:', err);
-        res.status(500).json({ error: err.message });
+        
+        // Handle duplicate key errors
+        if (err.code === 11000) {
+            const field = Object.keys(err.keyPattern)[0];
+            return res.status(409).json({ 
+                success: false,
+                message: `An account with this ${field} already exists` 
+            });
+        }
+
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error during registration. Please try again.' 
+        });
     }
 };
 
@@ -65,42 +134,112 @@ exports.login = async (req, res) => {
     try {
         const { email, mobile, password } = req.body;
 
+        // Validation
         if ((!email && !mobile) || !password) {
-            return res.status(400).json({ message: 'Please provide email/mobile and password' });
+            return res.status(400).json({ 
+                success: false,
+                message: 'Please provide email/mobile and password' 
+            });
         }
 
-        // Check for user by email or mobile
+        if (email && !isValidEmail(email)) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Please provide a valid email address' 
+            });
+        }
+
+        // Find user by email or mobile
         const user = await User.findOne({
             $or: [
-                { email: email || undefined },
-                { mobile: mobile || undefined }
+                ...(email ? [{ email: email.toLowerCase() }] : []),
+                ...(mobile ? [{ mobile }] : [])
             ]
         }).select('+password');
 
-        if (user && (await user.comparePassword(password))) {
-            res.json({
-                _id: user.id,
+        if (!user) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Account not found. Please sign up first.' 
+            });
+        }
+
+        // Check password
+        const isPasswordValid = await user.comparePassword(password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ 
+                success: false,
+                message: 'Incorrect password. Please try again.' 
+            });
+        }
+
+        // Generate token
+        const token = generateToken(user._id, user.role);
+
+        res.json({
+            success: true,
+            message: 'Login successful',
+            user: {
+                id: user._id,
                 name: user.name,
                 email: user.email,
+                mobile: user.mobile,
                 role: user.role,
-                token: generateToken(user._id),
-            });
-        } else {
-            res.status(401).json({ message: 'Invalid credentials' });
-        }
+                createdAt: user.createdAt
+            },
+            token
+        });
+
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Login Error:', err);
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error during login. Please try again.' 
+        });
     }
 };
 
-// @desc    Get user data
+// @desc    Get current user data
 // @route   GET /api/auth/me
 // @access  Private
 exports.getMe = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
-        res.status(200).json(user);
+        const user = await User.findById(req.user.userId);
+        
+        if (!user) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'User not found' 
+            });
+        }
+
+        res.json({
+            success: true,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                mobile: user.mobile,
+                role: user.role,
+                createdAt: user.createdAt
+            }
+        });
+
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get Me Error:', err);
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error. Please try again.' 
+        });
     }
+};
+
+// @desc    Logout user (client-side token removal)
+// @route   POST /api/auth/logout
+// @access  Private
+exports.logout = async (req, res) => {
+    res.json({
+        success: true,
+        message: 'Logged out successfully'
+    });
 };

@@ -17,67 +17,131 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "*", // In production this should be the specific frontend URL
+        origin: process.env.FRONTEND_URL || "http://localhost:3000",
         methods: ["GET", "POST", "PATCH", "DELETE"]
     }
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Security & Performance Middleware
 app.use(helmet());
 app.use(compression());
 
+// CORS Configuration
+app.use(cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    credentials: true
+}));
+
 // Rate Limiting
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // Limit each IP to 100 requests per windowMs
     standardHeaders: true,
     legacyHeaders: false,
+    message: {
+        success: false,
+        message: 'Too many requests from this IP, please try again later.'
+    }
 });
 app.use('/api', limiter);
 
-app.use(cors());
-app.use(express.json({ limit: '10mb' })); // Increased limit for image uploads if needed
+// Body parsing middleware
+app.use(express.json({ limit: process.env.MAX_FILE_SIZE || '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: process.env.MAX_FILE_SIZE || '10mb' }));
 
+// Socket.io middleware
 app.use((req, res, next) => {
     req.io = io;
     next();
 });
 
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/vendorify')
-    .then(() => console.log('MongoDB Connected'))
-    .catch(err => console.error('MongoDB Connection Error:', err));
+// MongoDB Connection with proper error handling
+const connectDB = async () => {
+    try {
+        const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/vendorify';
+        
+        const conn = await mongoose.connect(mongoURI, {
+            // Remove deprecated options, use only necessary ones
+        });
 
+        console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+        console.log(`📊 Database: ${conn.connection.name}`);
+        
+        // Handle connection events
+        mongoose.connection.on('error', (err) => {
+            console.error('❌ MongoDB connection error:', err);
+        });
+
+        mongoose.connection.on('disconnected', () => {
+            console.warn('⚠️  MongoDB disconnected');
+        });
+
+        mongoose.connection.on('reconnected', () => {
+            console.log('🔄 MongoDB reconnected');
+        });
+
+    } catch (error) {
+        console.error('❌ MongoDB connection failed:', error.message);
+        
+        // In development, exit process on connection failure
+        if (process.env.NODE_ENV === 'development') {
+            process.exit(1);
+        }
+        
+        // In production, attempt to reconnect after delay
+        setTimeout(connectDB, 5000);
+    }
+};
+
+// Connect to MongoDB
+connectDB();
+
+// Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/public/vendors', publicRoutes);
 app.use('/api/orders', orderRoutes);
 
-app.get('/', (req, res) => {
-    res.send('Vendorify API is running');
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Vendorify API is running',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    });
 });
 
-const vendorLocations = new Map();
+// Root endpoint
+app.get('/', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Welcome to Vendorify API',
+        version: '1.0.0',
+        documentation: '/api/health'
+    });
+});
 
+// Socket.io connection handling
 io.on('connection', (socket) => {
-    console.log('Client connected:', socket.id);
+    console.log('🔌 Client connected:', socket.id);
 
     socket.on('join_vendor_room', (vendorId) => {
         socket.join(`vendor_${vendorId}`);
-        console.log(`Socket ${socket.id} joined vendor_${vendorId}`);
+        console.log(`📦 Socket ${socket.id} joined vendor_${vendorId}`);
     });
 
     socket.on('join_customer_room', (customerId) => {
         socket.join(`customer_${customerId}`);
-        console.log(`Socket ${socket.id} joined customer_${customerId}`);
+        console.log(`🛒 Socket ${socket.id} joined customer_${customerId}`);
     });
 
-    // Updated for text-based address updates if needed, mostly handled via API now
-    // But keeping a generic update event if we want to broadcast profile changes
     socket.on('vendor_profile_update', (data) => {
         const { vendorId } = data;
-        io.emit('vendor_updated', { vendorId }); // Broadcast to refresh lists
+        io.emit('vendor_updated', { vendorId });
     });
 
     socket.on('vendor_online', async (vendorId) => {
@@ -101,10 +165,52 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
+        console.log('🔌 Client disconnected:', socket.id);
     });
 });
 
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error('🚨 Global Error:', err.stack);
+    
+    res.status(err.status || 500).json({
+        success: false,
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
+        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    });
+});
+
+// Handle 404 routes
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: `Route ${req.originalUrl} not found`
+    });
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('🛑 SIGTERM received, shutting down gracefully');
+    server.close(() => {
+        console.log('💤 Process terminated');
+        mongoose.connection.close();
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('🛑 SIGINT received, shutting down gracefully');
+    server.close(() => {
+        console.log('💤 Process terminated');
+        mongoose.connection.close();
+    });
+});
+
+// Start server
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log('🚀 ================================');
+    console.log(`🚀 Vendorify Server is running!`);
+    console.log(`🚀 Environment: ${process.env.NODE_ENV}`);
+    console.log(`🚀 Port: ${PORT}`);
+    console.log(`🚀 URL: http://localhost:${PORT}`);
+    console.log('🚀 ================================');
 });

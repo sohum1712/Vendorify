@@ -107,7 +107,7 @@ exports.getOrderById = async (req, res) => {
     try {
         const order = await Order.findById(req.params.id)
             .populate('vendorId', 'shopName address')
-            .populate('folder', 'name mobile'); // Error here: folder? Copy paste error likely, fixed to customerId
+            .populate('customerId', 'name mobile'); // Fixed typo: was 'folder'
 
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
