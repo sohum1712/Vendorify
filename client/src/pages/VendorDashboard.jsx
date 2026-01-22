@@ -11,6 +11,7 @@ import ShopDetailsModal from '../components/vendor/ShopDetailsModal';
 import Navbar from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
 import { toast } from 'react-toastify';
+import apiClient from '../utils/api';
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
@@ -35,11 +36,58 @@ const VendorDashboard = () => {
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  useEffect(() => {
-    if (user && user.role === 'VENDOR') {
-      fetchVendorData(user.id);
+  // Dashboard stats state
+  const [dashboardStats, setDashboardStats] = useState({
+    todayEarnings: 0,
+    activeOrders: 0,
+    totalRevenue: 0,
+    averageRating: 0,
+    totalReviews: 0,
+    isOnline: false,
+    shopName: '',
+    ownerName: '',
+    address: 'Location not set'
+  });
+
+  // Fetch dashboard stats
+  const fetchDashboardStats = useCallback(async () => {
+    try {
+      const [statsResponse, profileResponse] = await Promise.all([
+        apiClient.getVendorStats(),
+        apiClient.getVendorProfile()
+      ]);
+      
+      if (statsResponse.success) {
+        setDashboardStats(statsResponse.stats);
+        setIsOnline(statsResponse.stats.isOnline);
+      }
+      
+      // FIXED: Get vendor profile for complete data including image
+      if (profileResponse) {
+        setDashboardStats(prev => ({
+          ...prev,
+          shopImage: profileResponse.image,
+          shopName: profileResponse.shopName || prev.shopName,
+          ownerName: profileResponse.ownerName || prev.ownerName,
+          address: profileResponse.address || prev.address,
+          phone: profileResponse.phone || '',
+          email: profileResponse.email || '',
+          category: profileResponse.category || 'food',
+          services: profileResponse.services || [],
+          schedule: profileResponse.schedule || { operatingHours: '10:00 AM - 9:00 PM' }
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch dashboard stats:', error);
     }
-  }, [user, fetchVendorData]);
+  }, []);
+
+  useEffect(() => {
+    if (user && user.role === 'vendor') {
+      fetchVendorData(user.id);
+      fetchDashboardStats();
+    }
+  }, [user, fetchVendorData, fetchDashboardStats]);
 
   const orders = typeof getOrdersForVendor === 'function' ? getOrdersForVendor(user?.id || user?._id) : [];
   const completedOrders = orders.filter(o => o.status === 'COMPLETED');
@@ -68,6 +116,41 @@ const VendorDashboard = () => {
     }
   };
 
+  // Toggle online status
+  const handleToggleOnlineStatus = async () => {
+    try {
+      const newStatus = !isOnline;
+      const response = await apiClient.toggleVendorStatus(newStatus);
+      
+      if (response.success) {
+        setIsOnline(newStatus);
+        setDashboardStats(prev => ({ ...prev, isOnline: newStatus }));
+        toast.success(response.message);
+      }
+    } catch (error) {
+      console.error('Failed to toggle status:', error);
+      toast.error('Failed to update status');
+    }
+  };
+
+  // Handle shop photo upload
+  const handleShopPhotoUpload = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('shopPhoto', file);
+      
+      const response = await apiClient.uploadShopPhoto(formData);
+      
+      if (response.success) {
+        toast.success('Shop photo updated successfully');
+        fetchDashboardStats(); // Refresh to get updated image
+      }
+    } catch (error) {
+      console.error('Failed to upload shop photo:', error);
+      toast.error('Failed to upload shop photo');
+    }
+  };
+
   const notifications = [
     { id: 1, text: 'New order received!', time: '2 min ago', unread: true },
     { id: 2, text: 'Your rating increased to 4.9', time: '1 hour ago', unread: true },
@@ -75,10 +158,10 @@ const VendorDashboard = () => {
   ];
 
   const stats = [
-    { id: 1, name: 'Today\'s Earnings', value: `Rs ${totalEarnings}`, change: '+12%', icon: DollarSign, color: 'bg-[#CDF546] text-gray-900', delay: 0 },
-    { id: 2, name: 'Active Orders', value: orders.filter(o => o.status === 'NEW' || o.status === 'PENDING').length, change: '+2', icon: Package, color: 'bg-[#1A6950] text-white', delay: 0.1 },
-    { id: 3, name: 'Total Revenue', value: `Rs ${totalEarnings}`, change: '+8%', icon: TrendingUp, color: 'bg-white text-[#1A6950]', delay: 0.2 },
-    { id: 4, name: 'Avg Rating', value: vendorDetails?.rating || '4.8', change: `(${vendorDetails?.totalReviews || 0})`, icon: Star, color: 'bg-gray-900 text-white', delay: 0.3 },
+    { id: 1, name: 'Today\'s Earnings', value: `Rs ${dashboardStats.todayEarnings}`, change: '+12%', icon: DollarSign, color: 'bg-[#CDF546] text-gray-900', delay: 0 },
+    { id: 2, name: 'Active Orders', value: dashboardStats.activeOrders, change: '+2', icon: Package, color: 'bg-[#1A6950] text-white', delay: 0.1 },
+    { id: 3, name: 'Total Revenue', value: `Rs ${dashboardStats.totalRevenue}`, change: '+8%', icon: TrendingUp, color: 'bg-white text-[#1A6950]', delay: 0.2 },
+    { id: 4, name: 'Avg Rating', value: dashboardStats.averageRating || '4.8', change: `(${dashboardStats.totalReviews || 0})`, icon: Star, color: 'bg-gray-900 text-white', delay: 0.3 },
   ];
 
   return (
@@ -100,11 +183,24 @@ const VendorDashboard = () => {
               className="relative"
             >
               <div className="w-24 h-24 bg-[#1A6950] rounded-[32px] flex items-center justify-center shadow-2xl relative z-10 overflow-hidden">
-                {vendorDetails?.image ? (
-                  <img src={vendorDetails.image} alt="Shop" className="w-full h-full object-cover" />
-                ) : (
+                {dashboardStats.shopImage ? (
+                  <img 
+                    src={dashboardStats.shopImage.startsWith('http') 
+                      ? dashboardStats.shopImage 
+                      : `${window.location.origin}${dashboardStats.shopImage}`
+                    } 
+                    alt="Shop" 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                {!dashboardStats.shopImage && (
                   <Store size={40} className="text-[#CDF546]" />
                 )}
+                <Store size={40} className="text-[#CDF546]" style={{ display: 'none' }} />
               </div>
               <div className="absolute inset-0 bg-[#CDF546] rounded-[32px] blur-2xl opacity-40 animate-pulse" />
               <button
@@ -118,13 +214,13 @@ const VendorDashboard = () => {
             <div className="space-y-1">
               <div className="flex items-center gap-3">
                 <h1 className="text-4xl md:text-5xl font-heading font-black text-gray-900 uppercase tracking-tighter">
-                  {vendorDetails?.shopName || user?.shopName || "My Shop"}
+                  {dashboardStats.shopName || user?.shopName || "My Shop"}
                 </h1>
                 <ShieldCheck className="text-[#1A6950]" size={28} />
               </div>
               <p className="text-gray-400 font-bold text-[12px] uppercase tracking-[0.3em] flex items-center gap-2">
                 <MapPin size={14} className="text-[#1A6950]" />
-                {vendorDetails?.address || "Location not set"} • Verified Shop
+                {dashboardStats.address || "Location not set"} • Verified Shop
               </p>
             </div>
           </div>
@@ -419,8 +515,12 @@ const VendorDashboard = () => {
         <ShopDetailsModal
           isOpen={showEditProfile}
           onClose={() => setShowEditProfile(false)}
-          details={vendorDetails}
-          onSave={updateVendorDetails}
+          initialData={dashboardStats} // FIXED: Use correct prop name
+          onSave={(updatedData) => {
+            updateVendorDetails(updatedData);
+            fetchDashboardStats(); // ADDED: Refresh data after update
+            setShowEditProfile(false);
+          }}
         />
       )}
 

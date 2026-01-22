@@ -1,158 +1,163 @@
-# Vendorify Setup Guide
+# Vendorify
 
-## 🚀 Quick Start
+A modern marketplace platform connecting customers with local vendors through real-time location services and interactive maps.
+
+## Tech Stack
+
+**Frontend:** React 18 + Tailwind CSS + Framer Motion  
+**Backend:** Node.js/Express + MongoDB + Socket.io  
+**Maps:** Leaflet + React Leaflet  
+**Authentication:** JWT + bcrypt  
+**Real-time:** Socket.io for live updates  
+
+## Quick Start
 
 ### Prerequisites
-- Node.js (v16 or higher)
-- MongoDB (running locally or connection string)
+- Node.js 18+ 
+- MongoDB 5+
 - npm or yarn
 
-### 1. Clone and Install Dependencies
+### Installation
 
+1. **Clone the repository**
 ```bash
-# Install server dependencies
-cd server
-npm install
+git clone <repository-url>
+cd vendorify
+```
 
+2. **Install dependencies**
+```bash
 # Install client dependencies
-cd ../client
+cd client
+npm install
+
+# Install server dependencies  
+cd ../server
 npm install
 ```
 
-### 2. Environment Configuration
-
-The `.env` files are already created with default values. Update them as needed:
-
-**Server (.env):**
-- `MONGODB_URI`: Your MongoDB connection string
-- `JWT_SECRET`: Strong secret key for JWT tokens
-- `PORT`: Server port (default: 5001)
-
-**Client (.env):**
-- `REACT_APP_API_URL`: Backend API URL (default: http://localhost:5001/api)
-
-### 3. Database Setup
-
+3. **Environment Setup**
 ```bash
-cd server
+# Copy environment template
+cp server/.env.example server/.env
 
-# Verify your setup
-npm run verify
-
-# Initialize database with test users
-npm run init-db
+# Configure your environment variables
+# - MONGODB_URI
+# - JWT_SECRET  
+# - PORT
+# - FRONTEND_URL
 ```
 
-### 4. Start the Application
-
+4. **Initialize Database**
 ```bash
-# Terminal 1: Start the server
+cd server
+npm run init-db
+npm run verify
+```
+
+5. **Start Development Servers**
+```bash
+# Terminal 1 - Start backend
 cd server
 npm run dev
 
-# Terminal 2: Start the client
+# Terminal 2 - Start frontend  
 cd client
 npm start
 ```
 
-## 🔐 Test Users
-
-After running `npm run init-db`, you'll have these test accounts:
-
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@vendorify.com | admin123456 |
-| Customer | customer@test.com | customer123 |
-| Vendor | vendor@test.com | vendor123 |
-
-## 🧪 Testing Authentication
-
-1. Visit `http://localhost:3000`
-2. Click "Login" or "Sign Up"
-3. Use test credentials or create new account
-4. Test role-based access to different dashboards
-
-## 📋 API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `GET /api/auth/me` - Get current user
-- `POST /api/auth/logout` - User logout
-
-### Health Check
-- `GET /api/health` - Server health status
-
-## 🔧 Troubleshooting
-
-### MongoDB Connection Issues
-```bash
-# Check if MongoDB is running
-mongosh
-
-# Or start MongoDB service
-brew services start mongodb/brew/mongodb-community
-# or
-sudo systemctl start mongod
-```
-
-### Port Already in Use
-```bash
-# Kill process on port 5001
-lsof -ti:5001 | xargs kill -9
-
-# Kill process on port 3000
-lsof -ti:3000 | xargs kill -9
-```
-
-### JWT Issues
-- Ensure `JWT_SECRET` is set in server/.env
-- Check that the secret is long and complex
-
-## 🏗️ Architecture
+## Folder Structure
 
 ```
-Vendorify/
+vendorify/
 ├── client/                 # React frontend
+│   ├── public/            # Static assets
 │   ├── src/
-│   │   ├── components/     # Reusable components
+│   │   ├── components/    # Reusable components
+│   │   │   ├── common/    # Shared UI components
+│   │   │   ├── map/       # Map-related components
+│   │   │   ├── chat/      # Chat/messaging components
+│   │   │   └── vendor/    # Vendor-specific components
 │   │   ├── pages/         # Page components
-│   │   ├── context/       # React context (Auth, etc.)
-│   │   └── utils/         # Utilities (API client, etc.)
-│   └── .env              # Frontend environment variables
+│   │   │   ├── customer/  # Customer pages
+│   │   │   ├── vendor/    # Vendor pages
+│   │   │   └── admin/     # Admin pages
+│   │   ├── context/       # React context providers
+│   │   ├── hooks/         # Custom React hooks
+│   │   ├── utils/         # Utility functions
+│   │   └── constants/     # App constants
+│   └── package.json
 ├── server/                # Node.js backend
 │   ├── controllers/       # Route controllers
 │   ├── middleware/        # Express middleware
 │   ├── models/           # MongoDB models
 │   ├── routes/           # API routes
-│   ├── scripts/          # Utility scripts
-│   └── .env             # Backend environment variables
-└── SETUP.md             # This file
+│   ├── scripts/          # Database scripts
+│   ├── uploads/          # File uploads
+│   └── package.json
+└── README.md
 ```
 
-## 🔒 Security Features
+## API Endpoints
 
-- JWT-based authentication
-- Password hashing with bcrypt
-- Rate limiting
-- CORS protection
-- Helmet security headers
-- Input validation
-- Role-based access control
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | User registration |
+| POST | `/api/auth/login` | User login |
+| GET | `/api/auth/me` | Get current user |
+| GET | `/api/vendors/nearby` | Get nearby vendors |
+| POST | `/api/vendors/profile` | Update vendor profile |
+| GET | `/api/orders` | Get user orders |
+| POST | `/api/orders` | Create new order |
 
-## 🚀 Production Deployment
+## Features
 
-1. Set `NODE_ENV=production` in server/.env
-2. Update `MONGODB_URI` to production database
-3. Set strong `JWT_SECRET`
-4. Update `FRONTEND_URL` to production domain
-5. Build client: `npm run build`
-6. Deploy server with process manager (PM2, etc.)
+- 🗺️ **Interactive Maps** - Real-time vendor locations with Leaflet
+- 📱 **Responsive Design** - Mobile-first approach with Tailwind CSS
+- 🔐 **Secure Authentication** - JWT-based auth with role management
+- 💬 **Real-time Chat** - Socket.io powered messaging
+- 📍 **Geolocation** - Location-based vendor discovery
+- 🛒 **Order Management** - Complete order lifecycle
+- 📊 **Vendor Dashboard** - Analytics and management tools
+- 🎨 **Modern UI** - Smooth animations with Framer Motion
 
-## 📞 Support
+## Development
 
-If you encounter issues:
-1. Run `npm run verify` in server directory
-2. Check console logs for errors
-3. Ensure MongoDB is running
-4. Verify environment variables are set correctly
+### Code Style
+- ESLint configuration included
+- Prettier for code formatting
+- Consistent naming: camelCase for functions, PascalCase for components
+
+### Testing
+```bash
+# Run client tests
+cd client
+npm test
+
+# Run server tests (when implemented)
+cd server  
+npm test
+```
+
+### Build for Production
+```bash
+# Build client
+cd client
+npm run build
+
+# Start production server
+cd server
+npm start
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

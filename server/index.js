@@ -6,6 +6,8 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
+const { CONFIG, SOCKET_EVENTS, HTTP_STATUS } = require('./config/constants');
+
 const vendorRoutes = require('./routes/vendorRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const orderRoutes = require('./routes/orderRoutes');
@@ -16,28 +18,24 @@ const { Server } = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: {
-        origin: process.env.FRONTEND_URL || "http://localhost:3000",
-        methods: ["GET", "POST", "PATCH", "DELETE"]
-    }
+    cors: CONFIG.SOCKET.CORS,
+    transports: CONFIG.SOCKET.TRANSPORTS,
+    reconnectionAttempts: CONFIG.SOCKET.RECONNECTION_ATTEMPTS
 });
 
-const PORT = process.env.PORT || 5001;
+const PORT = CONFIG.SERVER.PORT;
 
 // Security & Performance Middleware
 app.use(helmet());
 app.use(compression());
 
 // CORS Configuration
-app.use(cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
-    credentials: true
-}));
+app.use(cors(CONFIG.CORS));
 
 // Rate Limiting
 const limiter = rateLimit({
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // Limit each IP to 100 requests per windowMs
+    windowMs: CONFIG.RATE_LIMIT.WINDOW_MS,
+    max: CONFIG.RATE_LIMIT.MAX_REQUESTS,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
@@ -51,6 +49,9 @@ app.use('/api', limiter);
 app.use(express.json({ limit: process.env.MAX_FILE_SIZE || '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: process.env.MAX_FILE_SIZE || '10mb' }));
 
+// Serve static files for uploaded images
+app.use('/uploads', express.static('uploads'));
+
 // Socket.io middleware
 app.use((req, res, next) => {
     req.io = io;
@@ -60,11 +61,7 @@ app.use((req, res, next) => {
 // MongoDB Connection with proper error handling
 const connectDB = async () => {
     try {
-        const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/vendorify';
-        
-        const conn = await mongoose.connect(mongoURI, {
-            // Remove deprecated options, use only necessary ones
-        });
+        const conn = await mongoose.connect(CONFIG.DATABASE.URI, CONFIG.DATABASE.OPTIONS);
 
         console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
         console.log(`📊 Database: ${conn.connection.name}`);
@@ -102,16 +99,29 @@ connectDB();
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/public/vendors', publicRoutes);
+app.use('/api/test', require('./routes/testRoutes')); // Test routes
 app.use('/api/orders', orderRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
+    const fs = require('fs');
+    const path = require('path');
+    
+    // Check if uploads directory exists
+    const uploadsDir = path.join(__dirname, 'uploads');
+    const shopsDir = path.join(uploadsDir, 'shops');
+    
     res.json({
         success: true,
         message: 'Vendorify API is running',
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV,
-        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        uploads: {
+            uploadsDir: fs.existsSync(uploadsDir),
+            shopsDir: fs.existsSync(shopsDir),
+            shopFiles: fs.existsSync(shopsDir) ? fs.readdirSync(shopsDir).length : 0
+        }
     });
 });
 

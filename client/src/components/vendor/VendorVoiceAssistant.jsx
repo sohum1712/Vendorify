@@ -103,46 +103,84 @@ const VendorVoiceAssistant = memo(() => {
 
   const handleVoiceCommand = useCallback(async (transcript) => {
     setIsProcessing(true);
-    const lowerTranscript = transcript.toLowerCase();
     
-    let response = currentResponses.error;
-    
-    if (lowerTranscript.includes('show orders') || lowerTranscript.includes('orders')) {
-      const newOrders = orders.filter(o => o.status === 'NEW');
-      response = `${currentResponses.orderHelp} You have ${newOrders.length} new orders.`;
-    } else if (lowerTranscript.includes('earnings') || lowerTranscript.includes('income')) {
-      const completedOrders = orders.filter(o => o.status === 'COMPLETED');
-      const totalEarnings = completedOrders.reduce((sum, o) => sum + o.total, 0);
-      response = `${currentResponses.earnings} Total earnings: ₹${totalEarnings}`;
-    } else if (lowerTranscript.includes('shop status') || lowerTranscript.includes('online')) {
-      response = currentResponses.status;
-    } else if (lowerTranscript.includes('mark complete') || lowerTranscript.includes('order done')) {
-      response = currentResponses.orderComplete;
-    } else if (lowerTranscript.includes('help')) {
-      const commands = currentResponses.commands;
-      response = `${currentResponses.welcome}\n\nVoice Commands:\n• "${commands.showOrders}" - View new orders\n• "${commands.earnings}" - Check today's income\n• "${commands.shopStatus}" - Check if online\n• "${commands.markComplete}" - Complete order\n• "${commands.help}" - Show this menu`;
+    try {
+      // Call backend voice command API
+      const response = await fetch('/api/vendors/voice/command', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('vendorify_token')}`
+        },
+        body: JSON.stringify({ 
+          command: transcript, 
+          language: selectedLanguage 
+        })
+      });
+
+      let aiResponseText = currentResponses.error;
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          aiResponseText = data.response;
+        }
+      } else {
+        // Fallback to local processing
+        const lowerTranscript = transcript.toLowerCase();
+        
+        if (lowerTranscript.includes('show orders') || lowerTranscript.includes('orders')) {
+          const newOrders = orders.filter(o => o.status === 'NEW');
+          aiResponseText = `${currentResponses.orderHelp} You have ${newOrders.length} new orders.`;
+        } else if (lowerTranscript.includes('earnings') || lowerTranscript.includes('income')) {
+          const completedOrders = orders.filter(o => o.status === 'COMPLETED');
+          const totalEarnings = completedOrders.reduce((sum, o) => sum + o.total, 0);
+          aiResponseText = `${currentResponses.earnings} Total earnings: ₹${totalEarnings}`;
+        } else if (lowerTranscript.includes('shop status') || lowerTranscript.includes('online')) {
+          aiResponseText = currentResponses.status;
+        } else if (lowerTranscript.includes('mark complete') || lowerTranscript.includes('order done')) {
+          aiResponseText = currentResponses.orderComplete;
+        } else if (lowerTranscript.includes('help')) {
+          const commands = currentResponses.commands;
+          aiResponseText = `${currentResponses.welcome}\n\nVoice Commands:\n• "${commands.showOrders}" - View new orders\n• "${commands.earnings}" - Check today's income\n• "${commands.shopStatus}" - Check if online\n• "${commands.markComplete}" - Complete order\n• "${commands.help}" - Show this menu`;
+        }
+      }
+
+      const newMessage = {
+        id: Date.now(),
+        text: transcript,
+        sender: 'vendor',
+        timestamp: new Date().toISOString(),
+        isVoice: true
+      };
+
+      const aiResponse = {
+        id: Date.now() + 1,
+        text: aiResponseText,
+        sender: 'assistant',
+        timestamp: new Date().toISOString(),
+        isVoice: false
+      };
+
+      setMessages(prev => [...prev, newMessage, aiResponse]);
+      writeMessages([...messages, newMessage, aiResponse]);
+    } catch (error) {
+      console.error('Voice command error:', error);
+      
+      // Fallback response
+      const errorMessage = {
+        id: Date.now() + 1,
+        text: currentResponses.error,
+        sender: 'assistant',
+        timestamp: new Date().toISOString(),
+        isVoice: false
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsProcessing(false);
     }
-
-    const newMessage = {
-      id: Date.now(),
-      text: transcript,
-      sender: 'vendor',
-      timestamp: new Date().toISOString(),
-      isVoice: true
-    };
-
-    const aiResponse = {
-      id: Date.now() + 1,
-      text: response,
-      sender: 'assistant',
-      timestamp: new Date().toISOString(),
-      isVoice: false
-    };
-
-    setMessages(prev => [...prev, newMessage, aiResponse]);
-    writeMessages([...messages, newMessage, aiResponse]);
-    setIsProcessing(false);
-  }, [currentResponses, orders, messages, writeMessages]);
+  }, [currentResponses, orders, messages, writeMessages, selectedLanguage]);
 
   const handleLanguageChange = (langCode) => {
     setSelectedLanguage(langCode);

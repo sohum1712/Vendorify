@@ -1,32 +1,36 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowUpRight, Twitter, Linkedin, Facebook, Instagram } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 export function Footer() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   return (
     <footer className="px-6 py-20 bg-[#01583F] rounded-t-[48px] text-white">
       <div className="mx-auto max-w-7xl">
-        {/* Top Section */}
-        <div className="mb-20 rounded-[48px] bg-[#CDF546] p-12 md:p-20 text-gray-900 relative overflow-hidden shadow-sm">
-          {/* Decorative element */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-[#01583F] rounded-bl-[120px] -mr-10 -mt-10 opacity-10" />
-          
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10 text-center md:text-left">
-            <h2 className="text-5xl md:text-7xl font-heading uppercase leading-[0.9] max-w-2xl">
-              Ready to verify your <br />
-              <span className="text-white">Vendor Network?</span>
-            </h2>
-            <button 
-              onClick={() => navigate('/signup/vendor')}
-              className="bg-[#01583F] text-white px-12 py-6 rounded-3xl font-bold uppercase tracking-widest text-lg flex items-center gap-3 hover:shadow-2xl transition-all focus:outline-none focus:ring-2 focus:ring-white"
-            >
-              Get Started Now
-              <ArrowUpRight className="h-6 w-6" />
-            </button>
+        {/* Top Section - Only show for non-authenticated users */}
+        {!isAuthenticated && (
+          <div className="mb-20 rounded-[48px] bg-[#CDF546] p-12 md:p-20 text-gray-900 relative overflow-hidden shadow-sm">
+            {/* Decorative element */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#01583F] rounded-bl-[120px] -mr-10 -mt-10 opacity-10" />
+            
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10 text-center md:text-left">
+              <h2 className="text-5xl md:text-7xl font-heading uppercase leading-[0.9] max-w-2xl">
+                Ready to verify your <br />
+                <span className="text-white">Vendor Network?</span>
+              </h2>
+              <button 
+                onClick={() => navigate('/signup/vendor')}
+                className="bg-[#01583F] text-white px-12 py-6 rounded-3xl font-bold uppercase tracking-widest text-lg flex items-center gap-3 hover:shadow-2xl transition-all focus:outline-none focus:ring-2 focus:ring-white"
+              >
+                Get Started Now
+                <ArrowUpRight className="h-6 w-6" />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Footer Grid */}
         <div className="grid gap-12 md:grid-cols-4 mb-20">

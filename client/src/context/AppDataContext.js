@@ -1,9 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { useGeolocation } from '../hooks/useGeolocation';
-
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
+import { CONFIG, SOCKET_EVENTS } from '../constants/config';
 
 const AppDataContext = createContext(null);
 
@@ -37,7 +35,7 @@ export const AppDataProvider = ({ children }) => {
   const customerId = getCustomerId();
 
   useEffect(() => {
-    socketRef.current = io(SOCKET_URL, {
+    socketRef.current = io(CONFIG.API.SOCKET_URL, {
       transports: ['websocket', 'polling'],
       reconnectionAttempts: 5
     });
@@ -110,22 +108,35 @@ export const AppDataProvider = ({ children }) => {
     }
   }, [customerId]);
 
-  const { error: geoError, refetch: refetchLocation } = useGeolocation(handleLocationUpdate, 30000);
+  const { error: geoError, loading: geoLoading, refetch: refetchLocation } = useGeolocation(handleLocationUpdate, 30000);
 
   const fetchVendors = useCallback(async () => {
     try {
       setLoading(true);
-      let url = `${API_URL}/public/vendors/all`;
+      let url = `${CONFIG.API.BASE_URL}/public/vendors/all`;
       
       if (userLocation) {
         url += `?lat=${userLocation.lat}&lng=${userLocation.lng}`;
       }
 
+      console.log('Fetching vendors from:', url);
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch vendors');
       
       const data = await res.json();
-      setVendors(data);
+      console.log('Raw vendor data:', data);
+      
+      // Transform vendor data to include coordinates in the expected format
+      const transformedVendors = data.map(vendor => ({
+        ...vendor,
+        coordinates: vendor.location?.coordinates ? {
+          lat: vendor.location.coordinates[1],
+          lng: vendor.location.coordinates[0]
+        } : null
+      }));
+      
+      console.log('Transformed vendors:', transformedVendors);
+      setVendors(transformedVendors);
       setError(null);
     } catch (err) {
       console.error('Fetch vendors error:', err);
@@ -137,13 +148,22 @@ export const AppDataProvider = ({ children }) => {
 
   const fetchNearbyVendors = useCallback(async (lat, lng, radius = 5000, category = 'all') => {
     try {
-      let url = `${API_URL}/public/vendors/nearby?lat=${lat}&lng=${lng}&radius=${radius}`;
+      let url = `${CONFIG.API.BASE_URL}/public/vendors/nearby?lat=${lat}&lng=${lng}&radius=${radius}`;
       if (category !== 'all') url += `&category=${category}`;
 
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch nearby vendors');
       
-      return await res.json();
+      const data = await res.json();
+      
+      // Transform vendor data to include coordinates in the expected format
+      return data.map(vendor => ({
+        ...vendor,
+        coordinates: vendor.location?.coordinates ? {
+          lat: vendor.location.coordinates[1],
+          lng: vendor.location.coordinates[0]
+        } : null
+      }));
     } catch (err) {
       console.error('Fetch nearby error:', err);
       return [];
@@ -152,7 +172,7 @@ export const AppDataProvider = ({ children }) => {
 
   const fetchRoamingVendors = useCallback(async () => {
     try {
-      let url = `${API_URL}/public/vendors/roaming`;
+      let url = `${CONFIG.API.BASE_URL}/public/vendors/roaming`;
       if (userLocation) {
         url += `?lat=${userLocation.lat}&lng=${userLocation.lng}`;
       }
@@ -169,7 +189,7 @@ export const AppDataProvider = ({ children }) => {
 
   const fetchDeals = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/public/vendors/deals`);
+      const res = await fetch(`${CONFIG.API.BASE_URL}/public/vendors/deals`);
       if (!res.ok) throw new Error('Failed to fetch deals');
       
       const data = await res.json();
@@ -183,7 +203,7 @@ export const AppDataProvider = ({ children }) => {
 
   const searchVendors = useCallback(async (query, category = 'all') => {
     try {
-      let url = `${API_URL}/public/vendors/search?q=${encodeURIComponent(query)}`;
+      let url = `${CONFIG.API.BASE_URL}/public/vendors/search?q=${encodeURIComponent(query)}`;
       if (category !== 'all') url += `&category=${category}`;
       if (userLocation) url += `&lat=${userLocation.lat}&lng=${userLocation.lng}`;
 
@@ -199,7 +219,7 @@ export const AppDataProvider = ({ children }) => {
 
   const fetchCustomerOrders = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/orders/customer/${customerId}`);
+      const res = await fetch(`${CONFIG.API.BASE_URL}/orders/customer/${customerId}`);
       if (!res.ok) throw new Error('Failed to fetch orders');
       
       const data = await res.json();
@@ -221,21 +241,21 @@ export const AppDataProvider = ({ children }) => {
       const headers = { 'Authorization': `Bearer ${token}` };
 
       // Fetch Vendor Details
-      const vRes = await fetch(`${API_URL}/vendors/profile`, { headers });
+      const vRes = await fetch(`${CONFIG.API.BASE_URL}/vendors/profile`, { headers });
       if (vRes.ok) {
         const vData = await vRes.json();
         setVendorDetails(vData);
       }
 
       // Fetch Products
-      const pRes = await fetch(`${API_URL}/vendors/products`, { headers });
+      const pRes = await fetch(`${CONFIG.API.BASE_URL}/vendors/products`, { headers });
       if (pRes.ok) {
         const pData = await pRes.json();
         setProducts(pData);
       }
 
       // Fetch Orders
-      const oRes = await fetch(`${API_URL}/orders/vendor`, { headers });
+      const oRes = await fetch(`${CONFIG.API.BASE_URL}/orders/vendor`, { headers });
       if (oRes.ok) {
         const oData = await oRes.json();
         setOrders(prev => {
@@ -252,7 +272,7 @@ export const AppDataProvider = ({ children }) => {
   const addProduct = useCallback(async (productData) => {
     try {
       const token = localStorage.getItem('vendorify_token');
-      const res = await fetch(`${API_URL}/vendors/products`, {
+      const res = await fetch(`${CONFIG.API.BASE_URL}/vendors/products`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -273,7 +293,7 @@ export const AppDataProvider = ({ children }) => {
   const deleteProduct = useCallback(async (productId) => {
     try {
       const token = localStorage.getItem('vendorify_token');
-      const res = await fetch(`${API_URL}/vendors/products/${productId}`, {
+      const res = await fetch(`${CONFIG.API.BASE_URL}/vendors/products/${productId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -288,8 +308,8 @@ export const AppDataProvider = ({ children }) => {
   const updateVendorDetails = useCallback(async (details) => {
     try {
       const token = localStorage.getItem('vendorify_token');
-      const res = await fetch(`${API_URL}/vendors/profile`, {
-        method: 'PATCH',
+      const res = await fetch(`${CONFIG.API.BASE_URL}/vendors/profile`, {
+        method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
@@ -298,8 +318,10 @@ export const AppDataProvider = ({ children }) => {
       });
       if (res.ok) {
         const updated = await res.json();
-        setVendorDetails(updated);
-        return updated;
+        if (updated.success) {
+          setVendorDetails(updated.vendor);
+          return updated.vendor;
+        }
       }
     } catch (err) {
       console.error('Update vendor error:', err);
@@ -322,7 +344,7 @@ export const AppDataProvider = ({ children }) => {
     if (cached) return cached;
 
     try {
-      const res = await fetch(`${API_URL}/public/vendors/${vendorId}`);
+      const res = await fetch(`${CONFIG.API.BASE_URL}/public/vendors/${vendorId}`);
       if (!res.ok) throw new Error('Vendor not found');
       return await res.json();
     } catch (err) {
@@ -333,7 +355,7 @@ export const AppDataProvider = ({ children }) => {
 
   const getVendorMenu = useCallback(async (vendorId) => {
     try {
-      const res = await fetch(`${API_URL}/public/vendors/${vendorId}/menu`);
+      const res = await fetch(`${CONFIG.API.BASE_URL}/public/vendors/${vendorId}/menu`);
       if (!res.ok) throw new Error('Failed to fetch menu');
       return await res.json();
     } catch (err) {
@@ -344,7 +366,7 @@ export const AppDataProvider = ({ children }) => {
 
   const getVendorReviews = useCallback(async (vendorId) => {
     try {
-      const res = await fetch(`${API_URL}/public/vendors/${vendorId}/reviews`);
+      const res = await fetch(`${CONFIG.API.BASE_URL}/public/vendors/${vendorId}/reviews`);
       if (!res.ok) throw new Error('Failed to fetch reviews');
       return await res.json();
     } catch (err) {
@@ -355,7 +377,7 @@ export const AppDataProvider = ({ children }) => {
 
   const addReview = useCallback(async ({ vendorId, customerName, rating, text }) => {
     try {
-      const res = await fetch(`${API_URL}/public/vendors/${vendorId}/reviews`, {
+      const res = await fetch(`${CONFIG.API.BASE_URL}/public/vendors/${vendorId}/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ customerId, customerName, rating, text })
@@ -434,7 +456,7 @@ export const AppDataProvider = ({ children }) => {
     const total = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
 
     try {
-      const res = await fetch(`${API_URL}/orders`, {
+      const res = await fetch(`${CONFIG.API.BASE_URL}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -479,7 +501,7 @@ export const AppDataProvider = ({ children }) => {
 
   const updateOrderStatus = useCallback(async ({ orderId, status }) => {
     try {
-      const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
+      const res = await fetch(`${CONFIG.API.BASE_URL}/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
@@ -508,6 +530,69 @@ export const AppDataProvider = ({ children }) => {
     return vendorLocations.get(vendorId) || null;
   };
 
+  // Add missing getVendorAnalytics method
+  const getVendorAnalytics = useCallback((vendorId) => {
+    const vendorOrders = orders.filter(o => 
+      String(o.vendorId) === String(vendorId) || 
+      String(o.vendorId?._id) === String(vendorId)
+    );
+
+    // Generate hourly data (24 hours)
+    const hourlyData = new Array(24).fill(0);
+    vendorOrders.forEach(order => {
+      const hour = new Date(order.createdAt).getHours();
+      hourlyData[hour]++;
+    });
+
+    // Calculate revenue by day (last 7 days)
+    const dailyRevenue = new Array(7).fill(0);
+    const today = new Date();
+    vendorOrders.forEach(order => {
+      if (order.status === 'COMPLETED' || order.status === 'delivered') {
+        const orderDate = new Date(order.createdAt);
+        const daysDiff = Math.floor((today - orderDate) / (1000 * 60 * 60 * 24));
+        if (daysDiff >= 0 && daysDiff < 7) {
+          dailyRevenue[6 - daysDiff] += order.total || order.totalAmount || 0;
+        }
+      }
+    });
+
+    // Top selling items
+    const itemCounts = {};
+    vendorOrders.forEach(order => {
+      order.items?.forEach(item => {
+        const name = item.name || item.productName;
+        if (name) {
+          itemCounts[name] = (itemCounts[name] || 0) + (item.quantity || 1);
+        }
+      });
+    });
+
+    const topItems = Object.entries(itemCounts)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5)
+      .map(([name, count]) => ({ name, count }));
+
+    // Calculate metrics
+    const totalRevenue = vendorOrders
+      .filter(o => o.status === 'COMPLETED' || o.status === 'delivered')
+      .reduce((sum, o) => sum + (o.total || o.totalAmount || 0), 0);
+
+    const totalOrders = vendorOrders.length;
+    const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+    return {
+      hourlyData,
+      dailyRevenue,
+      topItems,
+      totalRevenue,
+      totalOrders,
+      avgOrderValue,
+      peakHour: hourlyData.indexOf(Math.max(...hourlyData)),
+      conversionRate: 85 // Mock data for now
+    };
+  }, [orders]);
+
   const value = {
     vendors,
     orders,
@@ -518,6 +603,7 @@ export const AppDataProvider = ({ children }) => {
     loading,
     error,
     geoError,
+    geoLoading,
     customerId,
     vendorLocations,
     products,
@@ -546,6 +632,7 @@ export const AppDataProvider = ({ children }) => {
     addProduct,
     deleteProduct,
     updateVendorDetails,
+    getVendorAnalytics,
     socket: socketRef.current
   };
 

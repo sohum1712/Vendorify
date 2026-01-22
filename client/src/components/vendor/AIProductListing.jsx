@@ -48,32 +48,72 @@ const AIProductListing = ({ onClose, onProductAdded }) => {
 
   const fileInputRef = useRef(null);
 
-  const simulateProcessing = (type, data) => {
+  const simulateProcessing = async (type, data) => {
     setStep('processing');
 
-    setTimeout(() => {
+    try {
       let result = null;
 
       if (type === 'photo') {
-        const lowerName = data.name.toLowerCase();
-        const key = Object.keys(PRODUCT_RECOGNITION).find(k => lowerName.includes(k));
-        result = key ? PRODUCT_RECOGNITION[key] : { ...PRODUCT_RECOGNITION['samosa'], name: 'Unknown Item' }; // Fallback
-      } else if (type === 'text') {
-        const lowerName = data.toLowerCase();
-        const key = Object.keys(SCRAPED_DATA).find(k => lowerName.includes(k));
+        // For photo mode, use the filename to generate product
+        const fileName = data.name.toLowerCase();
+        const key = Object.keys(PRODUCT_RECOGNITION).find(k => fileName.includes(k));
+        
+        if (key) {
+          // Call backend AI endpoint with recognized product name
+          const response = await fetch('/api/vendors/ai/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('vendorify_token')}`
+            },
+            body: JSON.stringify({ query: PRODUCT_RECOGNITION[key].name })
+          });
 
-        // If not found, generate a generic one based on input
-        if (!key) {
-          result = {
-            name: data,
-            price: 100,
-            category: 'food',
-            description: `Freshly prepared ${data}.`,
-            image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=400",
-            calories: "Unknown"
-          };
+          if (response.ok) {
+            result = await response.json();
+          } else {
+            // Fallback to local data
+            result = { ...PRODUCT_RECOGNITION[key], name: PRODUCT_RECOGNITION[key].name };
+          }
         } else {
-          result = SCRAPED_DATA[key];
+          result = { ...PRODUCT_RECOGNITION['samosa'], name: 'Unknown Item' };
+        }
+      } else if (type === 'text') {
+        // For text mode, call backend AI endpoint
+        try {
+          const response = await fetch('/api/vendors/ai/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('vendorify_token')}`
+            },
+            body: JSON.stringify({ query: data })
+          });
+
+          if (response.ok) {
+            result = await response.json();
+          } else {
+            throw new Error('AI API failed');
+          }
+        } catch (error) {
+          console.error('AI API error:', error);
+          // Fallback to local data
+          const lowerName = data.toLowerCase();
+          const key = Object.keys(SCRAPED_DATA).find(k => lowerName.includes(k));
+
+          if (!key) {
+            result = {
+              name: data,
+              price: 100,
+              category: 'food',
+              description: `Freshly prepared ${data}.`,
+              image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=400",
+              calories: "Unknown"
+            };
+          } else {
+            result = SCRAPED_DATA[key];
+          }
         }
       }
 
@@ -82,11 +122,14 @@ const AIProductListing = ({ onClose, onProductAdded }) => {
         price: result.defaultPrice || result.price,
         category: result.category,
         description: result.description || "Fresh and delicious.",
-        image: result.image || photo, // Use recognized image or uploaded photo
-        cal: result.calories
+        image: result.image || photo,
+        calories: result.calories || result.cal
       });
       setStep('confirm');
-    }, 2000);
+    } catch (error) {
+      console.error('Processing error:', error);
+      setStep('input');
+    }
   };
 
   const handlePhotoCapture = (e) => {

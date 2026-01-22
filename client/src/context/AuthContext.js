@@ -1,11 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROLES } from '../constants/roles';
+import { CONFIG, SOCKET_EVENTS } from '../constants/config';
 import apiClient from '../utils/api';
 import { authToasts } from '../utils/toast';
 import { io } from 'socket.io-client';
-
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5001';
 
 export const AuthContext = createContext(null);
 
@@ -19,6 +18,7 @@ export const AuthProvider = ({ children }) => {
   const fetchCurrentUser = useCallback(async () => {
     const token = localStorage.getItem('vendorify_token');
     if (!token) {
+      setUser(null);
       setLoading(false);
       return;
     }
@@ -28,6 +28,10 @@ export const AuthProvider = ({ children }) => {
       if (response.success && response.user) {
         setUser(response.user);
         localStorage.setItem('vendorify_user', JSON.stringify(response.user));
+      } else {
+        // Invalid response, clear auth data
+        setUser(null);
+        apiClient.clearAuth();
       }
     } catch (error) {
       console.error('Fetch current user error:', error);
@@ -43,17 +47,33 @@ export const AuthProvider = ({ children }) => {
     fetchCurrentUser();
   }, [fetchCurrentUser]);
 
+  // Listen for storage changes (logout in another tab)
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'vendorify_token' && !e.newValue) {
+        // Token was removed, clear user state
+        setUser(null);
+        if (socket) {
+          socket.disconnect();
+          setSocket(null);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [socket]);
+
   // Socket Connection Management
   useEffect(() => {
     if (user && user.id) {
-      const newSocket = io(SOCKET_URL);
+      const newSocket = io(CONFIG.API.SOCKET_URL);
 
-      newSocket.on('connect', () => {
-        console.log('Socket Connected:', newSocket.id);
+      newSocket.on(SOCKET_EVENTS.CONNECTION, () => {
         if (user.role === ROLES.VENDOR) {
           // Join vendor room - will be handled by VendorDashboard with actual vendor profile ID
         } else if (user.role === ROLES.CUSTOMER) {
-          newSocket.emit('join_customer_room', user.id);
+          newSocket.emit(SOCKET_EVENTS.JOIN_CUSTOMER_ROOM, user.id);
         }
       });
 
@@ -126,11 +146,17 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // Clear user state immediately
       setUser(null);
+      // Clear localStorage to ensure no stale data
+      localStorage.removeItem('vendorify_token');
+      localStorage.removeItem('vendorify_user');
+      // Disconnect socket
       if (socket) {
         socket.disconnect();
         setSocket(null);
       }
+      // Navigate to home page
       navigate('/');
     }
   };

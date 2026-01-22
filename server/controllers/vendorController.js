@@ -1,5 +1,6 @@
 const Vendor = require('../models/Vendor');
 const Product = require('../models/Product');
+const path = require('path');
 
 // --- Vendor Profile Controllers ---
 
@@ -9,6 +10,14 @@ exports.getVendorProfile = async (req, res) => {
     try {
         const vendor = await Vendor.findOne({ userId: req.user.id });
         if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+        
+        console.log('Vendor profile retrieved:', {
+            id: vendor._id,
+            shopName: vendor.shopName,
+            image: vendor.image,
+            address: vendor.address
+        });
+        
         res.json(vendor);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -28,46 +37,287 @@ exports.updateVendorProfile = async (req, res) => {
             });
         }
 
+        // Extract location data if provided
+        const updateData = { ...req.body };
+        
+        // Handle coordinates if provided
+        if (req.body.coordinates && Array.isArray(req.body.coordinates) && req.body.coordinates.length === 2) {
+            updateData.location = {
+                type: 'Point',
+                coordinates: req.body.coordinates // [longitude, latitude]
+            };
+            updateData.lastLocationUpdate = new Date();
+        }
+
         const updatedVendor = await Vendor.findOneAndUpdate(
             { userId: req.user.id },
-            req.body,
+            updateData,
             { new: true, upsert: true } // Create if doesn't exist
         );
 
-        res.json(updatedVendor);
+        // Emit Socket.io event for real-time updates
+        if (req.io) {
+            req.io.emit('vendor_profile_updated', { 
+                vendorId: updatedVendor._id, 
+                shopName: updatedVendor.shopName,
+                address: updatedVendor.address,
+                location: updatedVendor.location
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Profile updated successfully',
+            vendor: updatedVendor
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Update vendor profile error:', err);
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to update profile',
+            error: err.message 
+        });
     }
 };
 
 exports.updateLocation = async (req, res) => {
     try {
-        const { address } = req.body;
+        const { address, coordinates } = req.body;
 
         if (!address) {
-            return res.status(400).json({ message: 'Address is required' });
+            return res.status(400).json({ 
+                success: false,
+                message: 'Address is required' 
+            });
+        }
+
+        const updateData = { 
+            address,
+            lastLocationUpdate: new Date()
+        };
+
+        // If coordinates are provided, update location field
+        if (coordinates && coordinates.length === 2) {
+            updateData.location = {
+                type: 'Point',
+                coordinates: [coordinates[0], coordinates[1]] // [lng, lat]
+            };
         }
 
         const vendor = await Vendor.findOneAndUpdate(
             { userId: req.user.id },
-            { address },
+            updateData,
             { new: true }
         );
 
         if (!vendor) {
-            return res.status(404).json({ message: 'Vendor not found' });
+            return res.status(404).json({ 
+                success: false,
+                message: 'Vendor not found' 
+            });
         }
 
-        // Emit Socket.IO event for real-time tracking (if needed for address change)
-        if (req.io) {
-            req.io.emit('vendor_location_update', { vendorId: vendor._id, address });
+        // Emit Socket.IO event for real-time tracking
+        if (req.io && coordinates) {
+            req.io.emit('vendor_location_update', { 
+                vendorId: vendor._id, 
+                address,
+                lat: coordinates[1],
+                lng: coordinates[0]
+            });
         }
 
-        res.json({ message: 'Location updated', address: vendor.address });
+        res.json({
+            success: true,
+            message: 'Location updated successfully',
+            vendor: {
+                address: vendor.address,
+                location: vendor.location,
+                lastLocationUpdate: vendor.lastLocationUpdate
+            }
+        });
+
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Update location error:', err);
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to update location',
+            error: err.message 
+        });
     }
 };
+
+// Add new endpoint for automatic location detection and update
+exports.updateLiveLocation = async (req, res) => {
+    try {
+        const { latitude, longitude } = req.body;
+
+        if (!latitude || !longitude) {
+            return res.status(400).json({
+                success: false,
+                message: 'Latitude and longitude are required'
+            });
+        }
+
+        // Reverse geocoding to get address (using a free service)
+        let address = `${latitude}, ${longitude}`;
+        
+        try {
+            const response = await fetch(
+                `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+            );
+            
+            if (response.ok) {
+                const data = await response.json();
+                address = data.display_name || data.locality || address;
+            }
+        } catch (geocodeError) {
+            console.log('Reverse geocoding failed, using coordinates as address');
+        }
+
+        const updateData = {
+            address,
+            location: {
+                type: 'Point',
+                coordinates: [longitude, latitude] // [lng, lat] for GeoJSON
+            },
+            lastLocationUpdate: new Date()
+        };
+
+        const vendor = await Vendor.findOneAndUpdate(
+            { userId: req.user.id },
+            updateData,
+            { new: true }
+        );
+
+        if (!vendor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+
+        // Emit Socket.IO event for real-time tracking
+        if (req.io) {
+            req.io.emit('vendor_location_update', {
+                vendorId: vendor._id,
+                address: vendor.address,
+                lat: latitude,
+                lng: longitude,
+                timestamp: new Date()
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Live location updated successfully',
+            vendor: {
+                address: vendor.address,
+                location: vendor.location,
+                lastLocationUpdate: vendor.lastLocationUpdate
+            }
+        });
+
+    } catch (err) {
+        console.error('Update live location error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update live location',
+            error: err.message
+        });
+    }
+};
+
+// --- Image Upload Controllers ---
+
+exports.uploadShopPhoto = async (req, res) => {
+    try {
+        console.log('Upload request received:', {
+            file: req.file ? {
+                filename: req.file.filename,
+                originalname: req.file.originalname,
+                size: req.file.size,
+                path: req.file.path
+            } : 'No file',
+            userId: req.user.id
+        });
+
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No image file provided'
+            });
+        }
+
+        const imageUrl = `/uploads/shops/${req.file.filename}`;
+        
+        console.log('Updating vendor with image URL:', imageUrl);
+        
+        const vendor = await Vendor.findOneAndUpdate(
+            { userId: req.user.id },
+            { image: imageUrl },
+            { new: true }
+        );
+
+        if (!vendor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+
+        console.log('Vendor updated successfully:', {
+            vendorId: vendor._id,
+            image: vendor.image
+        });
+
+        res.json({
+            success: true,
+            message: 'Shop photo uploaded successfully',
+            imageUrl: imageUrl,
+            vendor: {
+                image: vendor.image
+            }
+        });
+
+    } catch (err) {
+        console.error('Upload shop photo error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to upload shop photo',
+            error: err.message
+        });
+    }
+};
+
+exports.uploadProductImage = async (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No image files provided'
+            });
+        }
+
+        const imageUrls = req.files.map(file => `/uploads/products/${file.filename}`);
+
+        res.json({
+            success: true,
+            message: 'Product images uploaded successfully',
+            imageUrls: imageUrls
+        });
+
+    } catch (err) {
+        console.error('Upload product images error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to upload product images',
+            error: err.message
+        });
+    }
+};
+
+
 
 exports.searchVendors = async (req, res) => {
     try {
@@ -182,6 +432,228 @@ exports.aiGenerateMenu = async (req, res) => {
             category: "Main Course",
             ingredients: ["Fresh Ingredients"],
             image: `https://loremflickr.com/500/500/food,${encodeURIComponent(query)}/all`
+        });
+    }
+};
+
+// --- Dashboard Stats Controllers ---
+
+exports.getDashboardStats = async (req, res) => {
+    try {
+        const vendor = await Vendor.findOne({ userId: req.user.id });
+        if (!vendor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+
+        // Get orders for this vendor
+        const Order = require('../models/Order');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        // Today's orders
+        const todayOrders = await Order.find({
+            vendorId: vendor._id,
+            createdAt: { $gte: today, $lt: tomorrow }
+        });
+
+        // All orders for total revenue
+        const allOrders = await Order.find({ vendorId: vendor._id });
+
+        // Calculate stats
+        const todayEarnings = todayOrders
+            .filter(order => order.status === 'delivered')
+            .reduce((sum, order) => sum + order.totalAmount, 0);
+
+        const activeOrders = await Order.countDocuments({
+            vendorId: vendor._id,
+            status: { $in: ['pending', 'confirmed', 'preparing', 'ready'] }
+        });
+
+        const totalRevenue = allOrders
+            .filter(order => order.status === 'delivered')
+            .reduce((sum, order) => sum + order.totalAmount, 0);
+
+        // Calculate average rating (using vendor's rating field)
+        const averageRating = vendor.rating || 0;
+
+        res.json({
+            success: true,
+            stats: {
+                todayEarnings,
+                activeOrders,
+                totalRevenue,
+                averageRating: parseFloat(averageRating.toFixed(1)),
+                totalReviews: vendor.totalReviews || 0,
+                isOnline: vendor.isOnline,
+                shopName: vendor.shopName,
+                ownerName: vendor.ownerName,
+                address: vendor.address,
+                lastLocationUpdate: vendor.lastLocationUpdate
+            }
+        });
+
+    } catch (err) {
+        console.error('Get dashboard stats error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get dashboard stats',
+            error: err.message
+        });
+    }
+};
+
+exports.toggleOnlineStatus = async (req, res) => {
+    try {
+        const { isOnline } = req.body;
+        
+        const vendor = await Vendor.findOneAndUpdate(
+            { userId: req.user.id },
+            { isOnline: Boolean(isOnline) },
+            { new: true }
+        );
+
+        if (!vendor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+
+        // Emit socket event for real-time updates
+        if (req.io) {
+            req.io.emit('vendor_status_changed', {
+                vendorId: vendor._id,
+                isOnline: vendor.isOnline
+            });
+        }
+
+        res.json({
+            success: true,
+            message: `Shop is now ${vendor.isOnline ? 'online' : 'offline'}`,
+            isOnline: vendor.isOnline
+        });
+
+    } catch (err) {
+        console.error('Toggle online status error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update online status',
+            error: err.message
+        });
+    }
+};
+
+// --- Voice Command Controller ---
+
+exports.processVoiceCommand = async (req, res) => {
+    try {
+        const { command, language = 'en' } = req.body;
+
+        if (!command) {
+            return res.status(400).json({
+                success: false,
+                message: 'Voice command is required'
+            });
+        }
+
+        const vendor = await Vendor.findOne({ userId: req.user.id });
+        if (!vendor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+
+        // Process voice commands
+        const lowerCommand = command.toLowerCase();
+        let response = '';
+        let action = null;
+
+        if (lowerCommand.includes('order') || lowerCommand.includes('ऑर्डर')) {
+            const Order = require('../models/Order');
+            const activeOrders = await Order.countDocuments({
+                vendorId: vendor._id,
+                status: { $in: ['pending', 'confirmed', 'preparing', 'ready'] }
+            });
+            
+            response = language === 'hi' 
+                ? `आपके ${activeOrders} एक्टिव ऑर्डर हैं।`
+                : `You have ${activeOrders} active orders.`;
+            action = 'show_orders';
+        } 
+        else if (lowerCommand.includes('earning') || lowerCommand.includes('कमाई')) {
+            const Order = require('../models/Order');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            const todayOrders = await Order.find({
+                vendorId: vendor._id,
+                createdAt: { $gte: today, $lt: tomorrow },
+                status: 'delivered'
+            });
+
+            const todayEarnings = todayOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+            
+            response = language === 'hi'
+                ? `आज की कमाई: ₹${todayEarnings}`
+                : `Today's earnings: ₹${todayEarnings}`;
+            action = 'show_earnings';
+        }
+        else if (lowerCommand.includes('status') || lowerCommand.includes('स्थिति')) {
+            response = language === 'hi'
+                ? `आपकी दुकान ${vendor.isOnline ? 'ऑनलाइन' : 'ऑफलाइन'} है।`
+                : `Your shop is ${vendor.isOnline ? 'online' : 'offline'}.`;
+            action = 'show_status';
+        }
+        else if (lowerCommand.includes('online') || lowerCommand.includes('ऑनलाइन')) {
+            await Vendor.findOneAndUpdate(
+                { userId: req.user.id },
+                { isOnline: true }
+            );
+            
+            response = language === 'hi'
+                ? 'दुकान अब ऑनलाइन है।'
+                : 'Shop is now online.';
+            action = 'toggle_online';
+        }
+        else if (lowerCommand.includes('offline') || lowerCommand.includes('ऑफलाइन')) {
+            await Vendor.findOneAndUpdate(
+                { userId: req.user.id },
+                { isOnline: false }
+            );
+            
+            response = language === 'hi'
+                ? 'दुकान अब ऑफलाइन है।'
+                : 'Shop is now offline.';
+            action = 'toggle_offline';
+        }
+        else {
+            response = language === 'hi'
+                ? 'क्षमा करें, मैं समझ नहीं पाया। कृपया फिर से कोशिश करें।'
+                : 'Sorry, I didn\'t understand. Please try again.';
+            action = 'unknown';
+        }
+
+        res.json({
+            success: true,
+            response,
+            action,
+            language
+        });
+
+    } catch (err) {
+        console.error('Voice command error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to process voice command',
+            error: err.message
         });
     }
 };

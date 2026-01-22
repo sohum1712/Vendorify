@@ -1,10 +1,10 @@
 import { authToasts } from './toast';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+import { CONFIG, ENDPOINTS, ERROR_MESSAGES } from '../constants/config';
 
 class ApiClient {
   constructor() {
-    this.baseURL = API_BASE_URL;
+    this.baseURL = CONFIG.API.BASE_URL;
+    this.timeout = CONFIG.API.TIMEOUT;
   }
 
   // Get auth token from localStorage
@@ -49,12 +49,12 @@ class ApiClient {
         }
         // Redirect to login page
         window.location.href = '/';
-        throw new Error(data.message || 'Unauthorized');
+        throw new Error(data.message || ERROR_MESSAGES.UNAUTHORIZED);
       }
 
       if (response.status === 403) {
         authToasts.unauthorized();
-        throw new Error(data.message || 'Forbidden');
+        throw new Error(data.message || ERROR_MESSAGES.UNAUTHORIZED);
       }
 
       if (response.status === 404 && data.message?.includes('Account not found')) {
@@ -74,7 +74,7 @@ class ApiClient {
 
       if (response.status >= 500) {
         authToasts.serverError();
-        throw new Error(data.message || 'Server error');
+        throw new Error(data.message || ERROR_MESSAGES.SERVER_ERROR);
       }
 
       throw new Error(data.message || 'Request failed');
@@ -97,7 +97,7 @@ class ApiClient {
     } catch (error) {
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
         authToasts.networkError();
-        throw new Error('Network error. Please check your connection.');
+        throw new Error(ERROR_MESSAGES.NETWORK);
       }
       throw error;
     }
@@ -138,7 +138,7 @@ class ApiClient {
 
   // Authentication specific methods
   async login(credentials) {
-    const data = await this.post('/auth/login', credentials, { includeAuth: false });
+    const data = await this.post(ENDPOINTS.AUTH.LOGIN, credentials, { includeAuth: false });
     if (data.success && data.token) {
       localStorage.setItem('vendorify_token', data.token);
       localStorage.setItem('vendorify_user', JSON.stringify(data.user));
@@ -148,7 +148,7 @@ class ApiClient {
   }
 
   async register(userData) {
-    const data = await this.post('/auth/register', userData, { includeAuth: false });
+    const data = await this.post(ENDPOINTS.AUTH.REGISTER, userData, { includeAuth: false });
     if (data.success && data.token) {
       localStorage.setItem('vendorify_token', data.token);
       localStorage.setItem('vendorify_user', JSON.stringify(data.user));
@@ -159,7 +159,7 @@ class ApiClient {
 
   async logout() {
     try {
-      await this.post('/auth/logout');
+      await this.post(ENDPOINTS.AUTH.LOGOUT);
     } catch (error) {
       // Continue with logout even if API call fails
       console.warn('Logout API call failed:', error);
@@ -170,7 +170,99 @@ class ApiClient {
   }
 
   async getCurrentUser() {
-    return this.get('/auth/me');
+    return this.get(ENDPOINTS.AUTH.ME);
+  }
+
+  // Vendor specific methods
+  async getVendorProfile() {
+    return this.get(ENDPOINTS.VENDORS.PROFILE);
+  }
+
+  async updateVendorProfile(profileData) {
+    return this.put(ENDPOINTS.VENDORS.PROFILE, profileData);
+  }
+
+  async updateVendorLocation(locationData) {
+    return this.post('/vendors/location', locationData);
+  }
+
+  async updateLiveLocation(latitude, longitude) {
+    return this.post('/vendors/location/live', { latitude, longitude });
+  }
+
+  async getVendorStats() {
+    return this.get(ENDPOINTS.VENDORS.STATS);
+  }
+
+  async toggleVendorStatus(isOnline) {
+    return this.post(ENDPOINTS.VENDORS.TOGGLE_STATUS, { isOnline });
+  }
+
+  async uploadShopPhoto(formData) {
+    const headers = {};
+    const token = this.getToken();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${this.baseURL}${ENDPOINTS.VENDORS.UPLOAD_PHOTO}`, {
+      method: 'POST',
+      headers,
+      body: formData
+    });
+
+    return await this.handleResponse(response);
+  }
+
+  async uploadProductImages(formData) {
+    const headers = {};
+    const token = this.getToken();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${this.baseURL}/vendors/upload/product-images`, {
+      method: 'POST',
+      headers,
+      body: formData
+    });
+
+    return await this.handleResponse(response);
+  }
+
+  async getVendorProducts() {
+    return this.get(ENDPOINTS.VENDORS.PRODUCTS);
+  }
+
+  async addVendorProduct(productData) {
+    return this.post(ENDPOINTS.VENDORS.PRODUCTS, productData);
+  }
+
+  async deleteVendorProduct(productId) {
+    return this.delete(`${ENDPOINTS.VENDORS.PRODUCTS}/${productId}`);
+  }
+
+  async generateAIMenu(query) {
+    return this.post('/vendors/ai/generate', { query });
+  }
+
+  async processVoiceCommand(command, language = 'en') {
+    return this.post('/vendors/voice/command', { command, language });
+  }
+
+  // Public vendor methods
+  async getNearbyVendors(lat, lng, radius = CONFIG.MAP.DEFAULT_RADIUS_KM * 1000, category = 'all') {
+    return this.get(`${ENDPOINTS.PUBLIC.VENDORS_NEARBY}?lat=${lat}&lng=${lng}&radius=${radius}&category=${category}`, { includeAuth: false });
+  }
+
+  async searchVendors(query, category, lat, lng) {
+    const params = new URLSearchParams({ q: query });
+    if (category) params.append('category', category);
+    if (lat && lng) {
+      params.append('lat', lat);
+      params.append('lng', lng);
+    }
+    return this.get(`${ENDPOINTS.PUBLIC.VENDORS_SEARCH}?${params}`, { includeAuth: false });
   }
 }
 

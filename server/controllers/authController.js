@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Vendor = require('../models/Vendor');
 const jwt = require('jsonwebtoken');
 
 // Generate JWT
@@ -90,6 +91,25 @@ exports.register = async (req, res) => {
             password,
             role: role || 'customer'
         });
+
+        // Auto-create vendor profile if role is vendor
+        if (user.role === 'vendor') {
+            const shopId = `shop_${user._id}_${Date.now()}`;
+            
+            await Vendor.create({
+                userId: user._id.toString(),
+                shopName: `${user.name}'s Shop`,
+                ownerName: user.name,
+                phone: user.mobile || '',
+                email: user.email || '',
+                address: 'Location not set',
+                category: 'food',
+                isOnline: false,
+                isVerified: false,
+                shopId: shopId,
+                createdAt: new Date()
+            });
+        }
 
         // Generate token
         const token = generateToken(user._id, user.role);

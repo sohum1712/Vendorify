@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Check, Clock, Package, Truck, X } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { CONFIG } from '../../constants/config';
 
 const VendorOrders = () => {
   const { socket } = useAuth();
@@ -9,12 +10,10 @@ const VendorOrders = () => {
   const [loading, setLoading] = useState(true);
   const [vendorId, setVendorId] = useState(null);
 
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
   const fetchOrders = useCallback(async () => {
     try {
       const token = localStorage.getItem('vendorify_token');
-      const res = await fetch(`${API_URL}/orders`, {
+      const res = await fetch(`${CONFIG.API.BASE_URL}/orders`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {

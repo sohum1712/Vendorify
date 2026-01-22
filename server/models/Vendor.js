@@ -23,6 +23,11 @@ const vendorSchema = new mongoose.Schema({
         required: true,
         unique: true,
     },
+    shopId: {
+        type: String,
+        unique: true,
+        required: true
+    },
     shopName: {
         type: String,
         required: true,
@@ -38,8 +43,17 @@ const vendorSchema = new mongoose.Schema({
     shopPhotos: [String], // Array of image URLs
     services: [String], // Array of services offered
 
-    // Removing GeoJSON location as per new requirements
-    // location: { ... }, 
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point'
+        },
+        coordinates: {
+            type: [Number],
+            default: [0, 0]
+        }
+    }, 
 
     image: String, // Main profile image
     gallery: [String], // Kept for backward compatibility or alias to shopPhotos
