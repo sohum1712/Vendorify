@@ -426,3 +426,55 @@ textarea:focus-visible {
     transform: scale(0.98);
   }
 }
+
+/* Navbar Styles */
+.nav-link {
+  @apply text-gray-800 hover:text-emerald-700 transition-colors font-bold text-xs uppercase tracking-wider;
+}
+
+.icon-btn {
+  @apply p-2.5 text-gray-400 hover:text-emerald-700 hover:bg-gray-100 rounded-lg transition-all;
+}
+
+.logout-btn {
+  @apply bg-gray-900 hover:bg-black text-white px-8 py-3 rounded-full font-bold uppercase tracking-wider text-sm shadow-lg hover:shadow-xl transition-all flex items-center gap-2;
+}
+
+.mobile-link {
+  @apply text-gray-900 font-bold text-lg uppercase tracking-wider py-3 block hover:bg-yellow-50 px-4 rounded-xl transition-colors;
+}
+
+.signup-mobile {
+  @apply bg-[#CDF546] hover:bg-[#b8dd3e] text-gray-900 px-8 py-5 rounded-2xl font-bold flex items-center justify-center gap-2 uppercase tracking-wider shadow-xl hover:shadow-2xl transition-all mx-auto;
+}
+
+.logout-mobile {
+  @apply bg-gray-900 hover:bg-black text-white px-8 py-5 rounded-2xl font-bold flex items-center justify-center gap-2 uppercase tracking-wider shadow-xl hover:shadow-2xl transition-all mx-auto;
+}
+
+/* Custom utility classes for carousel */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+/* Ensure images are visible and properly loaded */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Fix for carousel animation */
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Ensure carousel container has proper overflow handling */
+.overflow-hidden {
+  overflow: hidden;
+}

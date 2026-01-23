@@ -21,14 +21,22 @@
     "express-rate-limit": "8.2.1",
     "helmet": "8.1.0",
     "jsonwebtoken": "9.0.3",
-    "mongoose": "9.1.4",
+    "mongoose": "^9.1.4",
     "multer": "1.4.5-lts.1",
     "socket.io": "4.8.3"
   },
   "devDependencies": {
     "nodemon": "3.1.11"
   },
-  "keywords": ["vendorify", "marketplace", "vendors", "api", "nodejs", "express", "mongodb"],
+  "keywords": [
+    "vendorify",
+    "marketplace",
+    "vendors",
+    "api",
+    "nodejs",
+    "express",
+    "mongodb"
+  ],
   "author": "Vendorify Team",
   "license": "MIT"
 }

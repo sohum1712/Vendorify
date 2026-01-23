@@ -89,9 +89,9 @@ const VendorDashboard = () => {
     }
   }, [user, fetchVendorData, fetchDashboardStats]);
 
-  const orders = typeof getOrdersForVendor === 'function' ? getOrdersForVendor(user?.id || user?._id) : [];
-  const completedOrders = orders.filter(o => o.status === 'COMPLETED');
-  const totalEarnings = completedOrders.reduce((sum, o) => sum + o.total, 0);
+  const orders = typeof getOrdersForVendor === 'function' ? (getOrdersForVendor(user?.id || user?._id) || []) : [];
+  const completedOrders = (orders || []).filter(o => o.status === 'COMPLETED');
+  const totalEarnings = (completedOrders || []).reduce((sum, o) => sum + (o.total || 0), 0);
 
   const handleAddProduct = useCallback(async (newProduct) => {
     const result = await addProduct(newProduct);
@@ -307,7 +307,7 @@ const VendorDashboard = () => {
                 <div>
                   <h2 className="text-2xl font-heading font-black text-gray-900 uppercase tracking-tight">Shop Menu</h2>
                   <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-1">
-                    {products.length} Items • Manage availability
+                    {(products || []).length} Items • Manage availability
                   </p>
                 </div>
                 <div className="flex gap-3 w-full md:w-auto">
@@ -330,7 +330,7 @@ const VendorDashboard = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <AnimatePresence>
-                  {products.map((item) => (
+                  {(products || []).map((item) => (
                     <motion.div
                       layout
                       key={item._id || item.id}
@@ -372,7 +372,7 @@ const VendorDashboard = () => {
                     </motion.div>
                   ))}
                 </AnimatePresence>
-                {products.length === 0 && (
+                {(products || []).length === 0 && (
                   <div className="col-span-2 text-center py-10 opacity-30 italic">
                     No products added yet.
                   </div>
@@ -394,7 +394,7 @@ const VendorDashboard = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                {orders.length > 0 ? orders.slice(0, 4).map((order) => (
+                {(orders || []).length > 0 ? (orders || []).slice(0, 4).map((order) => (
                   <div key={order._id || order.id} className="bg-white/5 backdrop-blur-xl rounded-[40px] p-8 border border-white/10 hover:border-[#CDF546]/50 transition-all group">
                     <div className="flex justify-between items-start mb-6">
                       <div className="space-y-1">

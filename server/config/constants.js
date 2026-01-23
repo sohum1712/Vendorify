@@ -9,12 +9,9 @@ const CONFIG = {
   DATABASE: {
     URI: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/vendorify',
     OPTIONS: {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-      bufferMaxEntries: 0
+      socketTimeoutMS: 45000
     }
   },
   

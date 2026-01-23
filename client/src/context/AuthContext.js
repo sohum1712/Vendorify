@@ -30,12 +30,14 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('vendorify_user', JSON.stringify(response.user));
       } else {
         // Invalid response, clear auth data
+        console.log('Invalid user response, clearing auth data');
         setUser(null);
         apiClient.clearAuth();
       }
     } catch (error) {
       console.error('Fetch current user error:', error);
-      // Token is invalid, clear auth data
+      // Token is invalid or expired, clear auth data
+      console.log('Token validation failed, clearing auth data');
       apiClient.clearAuth();
       setUser(null);
     } finally {
@@ -92,14 +94,8 @@ export const AuthProvider = ({ children }) => {
       if (response.success && response.user) {
         setUser(response.user);
         
-        // Navigate based on role
-        const redirectPath = 
-          response.user.role === ROLES.ADMIN ? '/admin' :
-          response.user.role === ROLES.VENDOR ? '/vendor' :
-          '/customer';
-        
-        navigate(redirectPath);
-        return { success: true };
+        // Return user data, let the component handle navigation
+        return { success: true, user: response.user };
       }
       
       return { success: false, message: response.message };
@@ -120,14 +116,8 @@ export const AuthProvider = ({ children }) => {
       if (response.success && response.user) {
         setUser(response.user);
         
-        // Navigate based on role
-        const redirectPath = 
-          response.user.role === ROLES.ADMIN ? '/admin' :
-          response.user.role === ROLES.VENDOR ? '/vendor' :
-          '/customer';
-        
-        navigate(redirectPath);
-        return { success: true };
+        // Navigate based on role - don't navigate here, let the component handle it
+        return { success: true, user: response.user };
       }
       
       return { success: false, message: response.message };
@@ -151,6 +141,8 @@ export const AuthProvider = ({ children }) => {
       // Clear localStorage to ensure no stale data
       localStorage.removeItem('vendorify_token');
       localStorage.removeItem('vendorify_user');
+      // Also clear any other potential auth-related data
+      localStorage.removeItem('vendorify_refresh_token');
       // Disconnect socket
       if (socket) {
         socket.disconnect();
@@ -159,6 +151,17 @@ export const AuthProvider = ({ children }) => {
       // Navigate to home page
       navigate('/');
     }
+  };
+
+  // Force logout - clears everything without API call
+  const forceLogout = () => {
+    setUser(null);
+    localStorage.clear(); // Clear all localStorage data
+    if (socket) {
+      socket.disconnect();
+      setSocket(null);
+    }
+    navigate('/');
   };
 
   // Update user function
@@ -174,7 +177,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Check if user is authenticated
-  const isAuthenticated = user && user.id;
+  const isAuthenticated = Boolean(user && user.id && !loading);
 
   return (
     <AuthContext.Provider
@@ -184,6 +187,7 @@ export const AuthProvider = ({ children }) => {
         register,
         login,
         logout,
+        forceLogout,
         updateUser,
         hasRole,
         isAuthenticated,

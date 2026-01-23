@@ -25,12 +25,12 @@ const VendorOrders = () => {
     } finally {
       setLoading(false);
     }
-  }, [API_URL]);
+  }, []);
 
   const fetchVendorProfile = useCallback(async () => {
     try {
       const token = localStorage.getItem('vendorify_token');
-      const res = await fetch(`${API_URL}/vendors/profile`, {
+      const res = await fetch(`${CONFIG.API.BASE_URL}/vendors/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -41,7 +41,7 @@ const VendorOrders = () => {
     } catch (err) {
       console.error('Error fetching profile:', err);
     }
-  }, [API_URL, fetchOrders]);
+  }, [fetchOrders]);
 
   useEffect(() => {
     fetchVendorProfile();
@@ -67,7 +67,7 @@ const VendorOrders = () => {
   const updateStatus = async (orderId, newStatus) => {
     try {
       const token = localStorage.getItem('vendorify_token');
-      const res = await fetch(`${API_URL}/orders/${orderId}/status`, {
+      const res = await fetch(`${CONFIG.API.BASE_URL}/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

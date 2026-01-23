@@ -1,27 +1,38 @@
-import { authToasts } from './toast';
-import { CONFIG, ENDPOINTS, ERROR_MESSAGES } from '../constants/config';
+import { authToasts } from "./toast";
+
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:5001/api";
 
 class ApiClient {
   constructor() {
-    this.baseURL = CONFIG.API.BASE_URL;
-    this.timeout = CONFIG.API.TIMEOUT;
+    this.baseURL = API_BASE_URL;
   }
 
   // Get auth token from localStorage
   getToken() {
-    return localStorage.getItem('vendorify_token');
+    return localStorage.getItem("vendorify_token");
   }
 
   // Remove auth data from localStorage
   clearAuth() {
-    localStorage.removeItem('vendorify_token');
-    localStorage.removeItem('vendorify_user');
+    localStorage.removeItem("vendorify_token");
+    localStorage.removeItem("vendorify_user");
+    localStorage.removeItem("vendorify_refresh_token");
+    // Clear any other auth-related data that might exist
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('vendorify_')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
   }
 
   // Create request headers
   getHeaders(includeAuth = true) {
     const headers = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     };
 
     if (includeAuth) {
@@ -42,42 +53,45 @@ class ApiClient {
       // Handle specific error cases
       if (response.status === 401) {
         this.clearAuth();
-        if (data.message?.includes('expired')) {
+        if (data.message?.includes("expired")) {
           authToasts.sessionExpired();
         } else {
           authToasts.unauthorized();
         }
         // Redirect to login page
-        window.location.href = '/';
-        throw new Error(data.message || ERROR_MESSAGES.UNAUTHORIZED);
+        window.location.href = "/";
+        throw new Error(data.message || "Unauthorized");
       }
 
       if (response.status === 403) {
         authToasts.unauthorized();
-        throw new Error(data.message || ERROR_MESSAGES.UNAUTHORIZED);
+        throw new Error(data.message || "Forbidden");
       }
 
-      if (response.status === 404 && data.message?.includes('Account not found')) {
+      if (
+        response.status === 404 &&
+        data.message?.includes("Account not found")
+      ) {
         authToasts.userNotFound();
         throw new Error(data.message);
       }
 
-      if (response.status === 401 && data.message?.includes('password')) {
+      if (response.status === 401 && data.message?.includes("password")) {
         authToasts.wrongPassword();
         throw new Error(data.message);
       }
 
-      if (response.status === 409 && data.message?.includes('already exists')) {
+      if (response.status === 409 && data.message?.includes("already exists")) {
         authToasts.accountExists();
         throw new Error(data.message);
       }
 
       if (response.status >= 500) {
         authToasts.serverError();
-        throw new Error(data.message || ERROR_MESSAGES.SERVER_ERROR);
+        throw new Error(data.message || "Server error");
       }
 
-      throw new Error(data.message || 'Request failed');
+      throw new Error(data.message || "Request failed");
     }
 
     return data;
@@ -95,9 +109,9 @@ class ApiClient {
       const response = await fetch(url, config);
       return await this.handleResponse(response);
     } catch (error) {
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      if (error.name === "TypeError" && error.message.includes("fetch")) {
         authToasts.networkError();
-        throw new Error(ERROR_MESSAGES.NETWORK);
+        throw new Error("Network error. Please check your connection.");
       }
       throw error;
     }
@@ -105,13 +119,13 @@ class ApiClient {
 
   // HTTP methods
   async get(endpoint, options = {}) {
-    return this.request(endpoint, { ...options, method: 'GET' });
+    return this.request(endpoint, { ...options, method: "GET" });
   }
 
   async post(endpoint, data, options = {}) {
     return this.request(endpoint, {
       ...options,
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
@@ -119,7 +133,7 @@ class ApiClient {
   async put(endpoint, data, options = {}) {
     return this.request(endpoint, {
       ...options,
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     });
   }
@@ -127,31 +141,35 @@ class ApiClient {
   async patch(endpoint, data, options = {}) {
     return this.request(endpoint, {
       ...options,
-      method: 'PATCH',
+      method: "PATCH",
       body: JSON.stringify(data),
     });
   }
 
   async delete(endpoint, options = {}) {
-    return this.request(endpoint, { ...options, method: 'DELETE' });
+    return this.request(endpoint, { ...options, method: "DELETE" });
   }
 
   // Authentication specific methods
   async login(credentials) {
-    const data = await this.post(ENDPOINTS.AUTH.LOGIN, credentials, { includeAuth: false });
+    const data = await this.post("/auth/login", credentials, {
+      includeAuth: false,
+    });
     if (data.success && data.token) {
-      localStorage.setItem('vendorify_token', data.token);
-      localStorage.setItem('vendorify_user', JSON.stringify(data.user));
+      localStorage.setItem("vendorify_token", data.token);
+      localStorage.setItem("vendorify_user", JSON.stringify(data.user));
       authToasts.loginSuccess(data.user.name);
     }
     return data;
   }
 
   async register(userData) {
-    const data = await this.post(ENDPOINTS.AUTH.REGISTER, userData, { includeAuth: false });
+    const data = await this.post("/auth/register", userData, {
+      includeAuth: false,
+    });
     if (data.success && data.token) {
-      localStorage.setItem('vendorify_token', data.token);
-      localStorage.setItem('vendorify_user', JSON.stringify(data.user));
+      localStorage.setItem("vendorify_token", data.token);
+      localStorage.setItem("vendorify_user", JSON.stringify(data.user));
       authToasts.registerSuccess(data.user.name);
     }
     return data;
@@ -159,10 +177,10 @@ class ApiClient {
 
   async logout() {
     try {
-      await this.post(ENDPOINTS.AUTH.LOGOUT);
+      await this.post("/auth/logout");
     } catch (error) {
       // Continue with logout even if API call fails
-      console.warn('Logout API call failed:', error);
+      console.warn("Logout API call failed:", error);
     } finally {
       this.clearAuth();
       authToasts.logoutSuccess();
@@ -170,89 +188,85 @@ class ApiClient {
   }
 
   async getCurrentUser() {
-    return this.get(ENDPOINTS.AUTH.ME);
+    try {
+      return await this.get("/auth/me");
+    } catch (error) {
+      // If getCurrentUser fails, it means the token is invalid
+      console.log('getCurrentUser failed, clearing auth data:', error.message);
+      this.clearAuth();
+      throw error;
+    }
   }
 
-  // Vendor specific methods
-  async getVendorProfile() {
-    return this.get(ENDPOINTS.VENDORS.PROFILE);
-  }
-
-  async updateVendorProfile(profileData) {
-    return this.put(ENDPOINTS.VENDORS.PROFILE, profileData);
-  }
-
-  async updateVendorLocation(locationData) {
-    return this.post('/vendors/location', locationData);
-  }
-
-  async updateLiveLocation(latitude, longitude) {
-    return this.post('/vendors/location/live', { latitude, longitude });
-  }
-
-  async getVendorStats() {
-    return this.get(ENDPOINTS.VENDORS.STATS);
-  }
-
-  async toggleVendorStatus(isOnline) {
-    return this.post(ENDPOINTS.VENDORS.TOGGLE_STATUS, { isOnline });
-  }
-
-  async uploadShopPhoto(formData) {
-    const headers = {};
+  // Test if current token is valid
+  async testToken() {
     const token = this.getToken();
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
+    if (!token) {
+      return { valid: false, reason: 'No token found' };
     }
 
-    const response = await fetch(`${this.baseURL}${ENDPOINTS.VENDORS.UPLOAD_PHOTO}`, {
-      method: 'POST',
-      headers,
-      body: formData
-    });
-
-    return await this.handleResponse(response);
-  }
-
-  async uploadProductImages(formData) {
-    const headers = {};
-    const token = this.getToken();
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
+    try {
+      const response = await this.getCurrentUser();
+      return { valid: true, user: response.user };
+    } catch (error) {
+      return { valid: false, reason: error.message };
     }
-
-    const response = await fetch(`${this.baseURL}/vendors/upload/product-images`, {
-      method: 'POST',
-      headers,
-      body: formData
-    });
-
-    return await this.handleResponse(response);
   }
 
-  async getVendorProducts() {
-    return this.get(ENDPOINTS.VENDORS.PRODUCTS);
-  }
+  // Reverse geocoding using backend proxy to OpenStreetMap Nominatim
+  async reverseGeocode(lat, lon) {
+    try {
+      const response = await this.get(
+        `/public/vendors/reverse-geocode?lat=${lat}&lon=${lon}`,
+      );
 
-  async addVendorProduct(productData) {
-    return this.post(ENDPOINTS.VENDORS.PRODUCTS, productData);
-  }
+      // Handle the rate limit response format from the server
+      if (
+        response.success === false &&
+        response.message?.includes("Too many requests")
+      ) {
+        return {
+          place: "Service temporarily unavailable",
+          district: "Please try again later",
+          state: "Rate limit exceeded",
+          country: "India",
+          fullAddress: "Location service temporarily unavailable",
+          rateLimited: true,
+        };
+      }
 
-  async deleteVendorProduct(productId) {
-    return this.delete(`${ENDPOINTS.VENDORS.PRODUCTS}/${productId}`);
-  }
+      return response;
+    } catch (error) {
+      console.error("Reverse geocoding error:", error);
 
-  async generateAIMenu(query) {
-    return this.post('/vendors/ai/generate', { query });
-  }
+      // Check if it's a rate limit error
+      if (
+        error.message?.includes("Too many requests") ||
+        error.message?.includes("429")
+      ) {
+        return {
+          place: "Service temporarily unavailable",
+          district: "Please try again later",
+          state: "Rate limit exceeded",
+          country: "India",
+          fullAddress: "Location service temporarily unavailable",
+          rateLimited: true,
+        };
+      }
 
-  async processVoiceCommand(command, language = 'en') {
-    return this.post('/vendors/voice/command', { command, language });
+      return {
+        place: "Unknown Area",
+        district: "Unknown District",
+        state: "Unknown State",
+        country: "Unknown Country",
+        fullAddress: "Location unavailable",
+      };
+    }
   }
 
   // Public vendor methods
-  async getNearbyVendors(lat, lng, radius = CONFIG.MAP.DEFAULT_RADIUS_KM * 1000, category = 'all') {
-    return this.get(`${ENDPOINTS.PUBLIC.VENDORS_NEARBY}?lat=${lat}&lng=${lng}&radius=${radius}&category=${category}`, { includeAuth: false });
+  async getNearbyVendors(lat, lng, radius = 5000, category = 'all') {
+    return this.get(`/public/vendors/nearby?lat=${lat}&lng=${lng}&radius=${radius}&category=${category}`, { includeAuth: false });
   }
 
   async searchVendors(query, category, lat, lng) {
@@ -262,7 +276,15 @@ class ApiClient {
       params.append('lat', lat);
       params.append('lng', lng);
     }
-    return this.get(`${ENDPOINTS.PUBLIC.VENDORS_SEARCH}?${params}`, { includeAuth: false });
+    return this.get(`/public/vendors/search?${params}`, { includeAuth: false });
+  }
+
+  async getRoamingVendors(lat, lng) {
+    let url = '/public/vendors/roaming';
+    if (lat && lng) {
+      url += `?lat=${lat}&lng=${lng}`;
+    }
+    return this.get(url, { includeAuth: false });
   }
 }
 
