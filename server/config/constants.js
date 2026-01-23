@@ -27,8 +27,8 @@ const CONFIG = {
   
   RATE_LIMIT: {
     WINDOW_MS: 15 * 60 * 1000, // 15 minutes
-    MAX_REQUESTS: 100,
-    AUTH_MAX_REQUESTS: 5 // For login/register endpoints
+    MAX_REQUESTS: 1000, // Increased from 100 to 1000
+    AUTH_MAX_REQUESTS: 50 // Increased from 5 to 50 for login/register endpoints
   },
   
   FILE_UPLOAD: {

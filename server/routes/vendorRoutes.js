@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const vendorController = require('../controllers/vendorController');
 const { uploadShopPhoto, uploadProductImages, handleUploadError } = require('../middleware/uploadMiddleware');
+const { vendorValidation, rateLimitValidation } = require('../middleware/validationMiddleware');
 
 const { protect } = require('../middleware/authMiddleware');
 
@@ -10,9 +11,9 @@ router.get('/search', vendorController.searchVendors);
 
 // Profile Routes
 router.get('/profile', protect, vendorController.getVendorProfile);
-router.put('/profile', protect, vendorController.updateVendorProfile);
-router.post('/location', protect, vendorController.updateLocation);
-router.post('/location/live', protect, vendorController.updateLiveLocation);
+router.put('/profile', protect, vendorValidation.updateProfile, vendorController.updateVendorProfile);
+router.post('/location', protect, vendorValidation.updateLocation, vendorController.updateLocation);
+router.post('/location/live', protect, rateLimitValidation, vendorController.updateLiveLocation);
 
 // Dashboard Routes
 router.get('/dashboard/stats', protect, vendorController.getDashboardStats);
@@ -24,14 +25,14 @@ router.post('/upload/product-images', protect, uploadProductImages, handleUpload
 
 // Menu Routes
 router.get('/products', protect, vendorController.getProducts);
-router.post('/products', protect, vendorController.addProduct);
+router.post('/products', protect, vendorValidation.addProduct, vendorController.addProduct);
 router.delete('/products/:id', protect, vendorController.deleteProduct);
 
 // AI Routes
-router.post('/ai/generate', protect, vendorController.aiGenerateMenu);
+router.post('/ai/generate', protect, rateLimitValidation, vendorController.aiGenerateMenu);
 
 // Voice Routes
-router.post('/voice/command', protect, vendorController.processVoiceCommand);
+router.post('/voice/command', protect, rateLimitValidation, vendorController.processVoiceCommand);
 
 // Test route for debugging
 router.get('/test/image/:filename', (req, res) => {

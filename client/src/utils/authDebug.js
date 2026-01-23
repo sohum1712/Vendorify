@@ -23,7 +23,7 @@ export const debugAuth = async () => {
     const tokenTest = await apiClient.testToken();
     console.log('Token test result:', tokenTest);
   } catch (error) {
-    console.log('Token test error:', error);
+    console.error('Token test error:', error);
   }
   
   console.log('=== END DEBUG INFO ===');

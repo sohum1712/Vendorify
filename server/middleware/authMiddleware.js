@@ -13,8 +13,17 @@ const protect = async (req, res, next) => {
             // Get token from header
             token = req.headers.authorization.split(' ')[1];
 
-            // Verify token
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key_for_development');
+            // Verify token - FIXED: Ensure JWT_SECRET exists
+            const jwtSecret = process.env.JWT_SECRET;
+            if (!jwtSecret) {
+                console.error('JWT_SECRET is not defined in environment variables');
+                return res.status(500).json({ 
+                    success: false,
+                    message: 'Server configuration error' 
+                });
+            }
+
+            const decoded = jwt.verify(token, jwtSecret);
 
             // Get user from the token (using userId from new JWT structure)
             const user = await User.findById(decoded.userId).select('-password');
@@ -26,9 +35,10 @@ const protect = async (req, res, next) => {
                 });
             }
 
-            // Attach user info to request
+            // FIXED: Consistent user object structure
             req.user = {
-                userId: user._id,
+                id: user._id, // Primary ID field
+                userId: user._id, // Backward compatibility
                 role: user.role,
                 email: user.email,
                 name: user.name

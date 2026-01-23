@@ -65,13 +65,13 @@ export default function Navbar({ role = "landing" }) {
   return (
     <nav className="fixed top-2 z-50 w-full flex justify-center px-4 transition-all duration-300">
       <div
-        className={`bg-white/95 backdrop-blur-xl px-6 py-4 flex items-center justify-between w-full max-w-7xl rounded-b-3xl shadow-lg border ${
+        className={`bg-white/95 backdrop-blur-xl px-6 py-4 flex items-center justify-between w-full max-w-7xl rounded-3xl shadow-lg border ${
           isScrolled ? "ring-1 ring-gray-200/50 scale-[1.02]" : ""
         }`}
       >
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <img src="/logo.svg" alt="Vendorify" className="w-14 h-14" />
+          <img src="/logo.svg" alt="Vendorify" className="w-12 h-12 md:w-14 md:h-14" />
           <span className="hidden sm:block text-xl font-black uppercase">
             Vendorify
           </span>
@@ -81,20 +81,20 @@ export default function Navbar({ role = "landing" }) {
         <div className="hidden lg:flex items-center gap-6">
           {role === "landing" && (
             <div className="relative group">
-              <button className="flex items-center gap-1 text-xs font-bold uppercase">
+              <button className="flex items-center gap-1 text-xs font-bold uppercase hover:text-[#1A6950] transition-colors">
                 Products
                 <ChevronDown className="h-4 w-4" />
               </button>
-              <div className="absolute hidden group-hover:block bg-white rounded-xl shadow-xl mt-2 w-56">
+              <div className="absolute hidden group-hover:block bg-white rounded-xl shadow-xl mt-2 w-56 border border-gray-100">
                 <button
                   onClick={() => scrollToSection("categories")}
-                  className="block w-full px-6 py-3 text-left hover:bg-yellow-50"
+                  className="block w-full px-6 py-3 text-left hover:bg-yellow-50 transition-colors"
                 >
                   Categories
                 </button>
                 <button
                   onClick={() => scrollToSection("how-it-works")}
-                  className="block w-full px-6 py-3 text-left hover:bg-yellow-50"
+                  className="block w-full px-6 py-3 text-left hover:bg-yellow-50 transition-colors"
                 >
                   How it Works
                 </button>
@@ -118,22 +118,22 @@ export default function Navbar({ role = "landing" }) {
         <div className="hidden md:flex items-center gap-4">
           {role === "landing" ? (
             <>
-              <button onClick={() => navigate("/login")}>Login</button>
               <button
-                onClick={() => navigate("/signup")}
-                className="bg-[#CDF546] px-6 py-3 rounded-full font-bold flex items-center gap-2"
+                onClick={() => navigate("/role-selection")}
+                className="bg-[#1A6950] hover:bg-[#145a44] active:scale-[0.98] px-6 py-3 rounded-full font-bold flex items-center gap-2 transition-all shadow-sm hover:shadow-md text-white"
               >
-                Sign Up <ArrowRight size={16} />
+                Get Started Now <ArrowRight size={16} className="text-[#CDF546]" />
               </button>
             </>
           ) : (
             <>
-              <button className="icon-btn">
+              <button className="icon-btn" aria-label="Notifications">
                 <Bell size={20} />
               </button>
               <button
                 onClick={() => navigate(`/${role}/profile`)}
                 className="icon-btn"
+                aria-label="Profile"
               >
                 <User size={20} />
               </button>
@@ -145,8 +145,12 @@ export default function Navbar({ role = "landing" }) {
         </div>
 
         {/* Mobile Toggle */}
-        <button onClick={() => setIsOpen(!isOpen)} className="md:hidden">
-          {isOpen ? <X /> : <Menu />}
+        <button 
+          onClick={() => setIsOpen(!isOpen)} 
+          className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          aria-label={isOpen ? "Close menu" : "Open menu"}
+        >
+          {isOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
 
@@ -157,7 +161,7 @@ export default function Navbar({ role = "landing" }) {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="md:hidden absolute top-[calc(100%+12px)] left-4 right-4 bg-white rounded-3xl shadow-2xl p-6"
+            className="md:hidden absolute top-[calc(100%+12px)] left-4 right-4 bg-white rounded-3xl shadow-2xl p-6 border border-gray-100"
           >
             {currentLinks.map((link, i) =>
               link.action ? (
@@ -179,29 +183,36 @@ export default function Navbar({ role = "landing" }) {
                 </Link>
               )
             )}
-            <hr />
+            <hr className="my-4 border-gray-100" />
             {role === "landing" ? (
               <>
-                <Link to="/login" className="mobile-link">
-                  Login
-                </Link>
                 <button
-                  onClick={() => navigate("/signup")}
+                  onClick={() => {
+                    navigate("/role-selection");
+                    setIsOpen(false);
+                  }}
                   className="signup-mobile"
                 >
-                  Sign Up <ArrowRight />
+                  Get Started Now <ArrowRight size={16} />
                 </button>
               </>
             ) : (
               <>
                 <Link
                   to={`/${role}/profile`}
-                  className="mobile-link flex gap-2"
+                  className="mobile-link flex items-center gap-2"
+                  onClick={() => setIsOpen(false)}
                 >
-                  <User /> Profile
+                  <User size={18} /> Profile
                 </Link>
-                <button onClick={handleLogout} className="logout-mobile">
-                  Log Out <LogOut />
+                <button 
+                  onClick={() => {
+                    handleLogout();
+                    setIsOpen(false);
+                  }} 
+                  className="logout-mobile"
+                >
+                  Log Out <LogOut size={16} />
                 </button>
               </>
             )}

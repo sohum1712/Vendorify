@@ -1,12 +1,18 @@
 const User = require('../models/User');
 const Vendor = require('../models/Vendor');
 const jwt = require('jsonwebtoken');
+const Logger = require('../utils/logger');
 
 // Generate JWT
 const generateToken = (userId, role) => {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+        throw new Error('JWT_SECRET is not defined in environment variables');
+    }
+    
     return jwt.sign(
         { userId, role }, 
-        process.env.JWT_SECRET || 'fallback_secret_key_for_development', 
+        jwtSecret, 
         {
             expiresIn: process.env.JWT_EXPIRE || '7d',
         }
@@ -29,7 +35,7 @@ const isValidPassword = (password) => {
 // @access  Public
 exports.register = async (req, res) => {
     try {
-        const { name, email, password, role, mobile } = req.body;
+        const { name, email, password, role, mobile, shopName, address, latitude, longitude } = req.body;
 
         // Validation
         if (!name || !name.trim()) {
@@ -67,6 +73,14 @@ exports.register = async (req, res) => {
             });
         }
 
+        // Additional validation for vendor registration
+        if (role === 'vendor' && !shopName) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Shop name is required for vendor registration' 
+            });
+        }
+
         // Check if user exists
         const existingUser = await User.findOne({
             $or: [
@@ -96,19 +110,31 @@ exports.register = async (req, res) => {
         if (user.role === 'vendor') {
             const shopId = `shop_${user._id}_${Date.now()}`;
             
-            await Vendor.create({
+            const vendorData = {
                 userId: user._id.toString(),
-                shopName: `${user.name}'s Shop`,
+                shopName: shopName || `${user.name}'s Shop`,
                 ownerName: user.name,
                 phone: user.mobile || '',
                 email: user.email || '',
-                address: 'Location not set',
+                address: address || 'Location not set',
                 category: 'food',
                 isOnline: false,
                 isVerified: false,
                 shopId: shopId,
                 createdAt: new Date()
-            });
+            };
+
+            // Add location coordinates if provided
+            if (latitude && longitude) {
+                vendorData.location = {
+                    type: 'Point',
+                    coordinates: [parseFloat(longitude), parseFloat(latitude)]
+                };
+                vendorData.latitude = parseFloat(latitude);
+                vendorData.longitude = parseFloat(longitude);
+            }
+
+            await Vendor.create(vendorData);
         }
 
         // Generate token
@@ -129,7 +155,7 @@ exports.register = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Registration Error:', err);
+        Logger.error('Registration Error:', err);
         
         // Handle duplicate key errors
         if (err.code === 11000) {
@@ -211,7 +237,7 @@ exports.login = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Login Error:', err);
+        Logger.error('Login Error:', err);
         res.status(500).json({ 
             success: false,
             message: 'Server error during login. Please try again.' 
@@ -246,7 +272,7 @@ exports.getMe = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Get Me Error:', err);
+        Logger.error('Get Me Error:', err);
         res.status(500).json({ 
             success: false,
             message: 'Server error. Please try again.' 

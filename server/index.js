@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const { CONFIG, SOCKET_EVENTS, HTTP_STATUS } = require('./config/constants');
+const Logger = require('./utils/logger');
 
 const vendorRoutes = require('./routes/vendorRoutes');
 const publicRoutes = require('./routes/publicRoutes');
@@ -63,24 +64,24 @@ const connectDB = async () => {
     try {
         const conn = await mongoose.connect(CONFIG.DATABASE.URI, CONFIG.DATABASE.OPTIONS);
 
-        console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
-        console.log(`📊 Database: ${conn.connection.name}`);
+        Logger.info(`✅ MongoDB Connected: ${conn.connection.host}`);
+        Logger.info(`📊 Database: ${conn.connection.name}`);
         
         // Handle connection events
         mongoose.connection.on('error', (err) => {
-            console.error('❌ MongoDB connection error:', err);
+            Logger.error('❌ MongoDB connection error:', err);
         });
 
         mongoose.connection.on('disconnected', () => {
-            console.warn('⚠️  MongoDB disconnected');
+            Logger.warn('⚠️  MongoDB disconnected');
         });
 
         mongoose.connection.on('reconnected', () => {
-            console.log('🔄 MongoDB reconnected');
+            Logger.info('🔄 MongoDB reconnected');
         });
 
     } catch (error) {
-        console.error('❌ MongoDB connection failed:', error.message);
+        Logger.error('❌ MongoDB connection failed:', error.message);
         
         // In development, exit process on connection failure
         if (process.env.NODE_ENV === 'development') {
@@ -137,16 +138,16 @@ app.get('/', (req, res) => {
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
-    console.log('🔌 Client connected:', socket.id);
+    Logger.info('🔌 Client connected:', socket.id);
 
     socket.on('join_vendor_room', (vendorId) => {
         socket.join(`vendor_${vendorId}`);
-        console.log(`📦 Socket ${socket.id} joined vendor_${vendorId}`);
+        Logger.info(`📦 Socket ${socket.id} joined vendor_${vendorId}`);
     });
 
     socket.on('join_customer_room', (customerId) => {
         socket.join(`customer_${customerId}`);
-        console.log(`🛒 Socket ${socket.id} joined customer_${customerId}`);
+        Logger.info(`🛒 Socket ${socket.id} joined customer_${customerId}`);
     });
 
     socket.on('vendor_profile_update', (data) => {
@@ -160,7 +161,7 @@ io.on('connection', (socket) => {
             await Vendor.findByIdAndUpdate(vendorId, { isOnline: true });
             io.emit('vendor_status_changed', { vendorId, isOnline: true });
         } catch (err) {
-            console.error('Error setting vendor online:', err);
+            Logger.error('Error setting vendor online:', err);
         }
     });
 
@@ -170,18 +171,18 @@ io.on('connection', (socket) => {
             await Vendor.findByIdAndUpdate(vendorId, { isOnline: false });
             io.emit('vendor_status_changed', { vendorId, isOnline: false });
         } catch (err) {
-            console.error('Error setting vendor offline:', err);
+            Logger.error('Error setting vendor offline:', err);
         }
     });
 
     socket.on('disconnect', () => {
-        console.log('🔌 Client disconnected:', socket.id);
+        Logger.info('🔌 Client disconnected:', socket.id);
     });
 });
 
 // Global error handler
 app.use((err, req, res, next) => {
-    console.error('🚨 Global Error:', err.stack);
+    Logger.error('🚨 Global Error:', err.stack);
     
     res.status(err.status || 500).json({
         success: false,
@@ -200,27 +201,27 @@ app.use((req, res) => {
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-    console.log('🛑 SIGTERM received, shutting down gracefully');
+    Logger.info('🛑 SIGTERM received, shutting down gracefully');
     server.close(() => {
-        console.log('💤 Process terminated');
+        Logger.info('💤 Process terminated');
         mongoose.connection.close();
     });
 });
 
 process.on('SIGINT', () => {
-    console.log('🛑 SIGINT received, shutting down gracefully');
+    Logger.info('🛑 SIGINT received, shutting down gracefully');
     server.close(() => {
-        console.log('💤 Process terminated');
+        Logger.info('💤 Process terminated');
         mongoose.connection.close();
     });
 });
 
 // Start server
 server.listen(PORT, () => {
-    console.log('🚀 ================================');
-    console.log(`🚀 Vendorify Server is running!`);
-    console.log(`🚀 Environment: ${process.env.NODE_ENV}`);
-    console.log(`🚀 Port: ${PORT}`);
-    console.log(`🚀 URL: http://localhost:${PORT}`);
-    console.log('🚀 ================================');
+    Logger.info('🚀 ================================');
+    Logger.info(`🚀 Vendorify Server is running!`);
+    Logger.info(`🚀 Environment: ${process.env.NODE_ENV}`);
+    Logger.info(`🚀 Port: ${PORT}`);
+    Logger.info(`🚀 URL: http://localhost:${PORT}`);
+    Logger.info('🚀 ================================');
 });

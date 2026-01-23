@@ -232,7 +232,9 @@ export const AppDataProvider = ({ children }) => {
   /* -------------------- API HELPERS -------------------- */
   const fetchVendors = useCallback(async () => {
     try {
-      console.log('🔄 Fetching vendors...');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Fetching vendors...');
+      }
       setLoading(true);
       
       // First check if server is reachable
@@ -241,7 +243,9 @@ export const AppDataProvider = ({ children }) => {
         if (!healthCheck.ok) {
           throw new Error('Server health check failed');
         }
-        console.log('✅ Server health check passed');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Server health check passed');
+        }
       } catch (healthError) {
         throw new Error('Server is not reachable. Please check if the backend is running.');
       }
@@ -249,19 +253,29 @@ export const AppDataProvider = ({ children }) => {
       let url = `${CONFIG.API.BASE_URL}/public/vendors/all`;
       if (userLocation) {
         url += `?lat=${userLocation.lat}&lng=${userLocation.lng}`;
-        console.log('📍 User location available:', userLocation);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📍 User location available:', userLocation);
+        }
       } else {
-        console.log('⚠️ No user location available');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('⚠️ No user location available');
+        }
       }
 
-      console.log('📡 API URL:', url);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📡 API URL:', url);
+      }
       const res = await fetch(url);
-      console.log('📊 Response status:', res.status);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📊 Response status:', res.status);
+      }
       
       if (!res.ok) throw new Error(`Failed to fetch vendors: ${res.status} ${res.statusText}`);
       const data = await res.json();
-      console.log('✅ Raw vendors fetched:', data.length);
-      console.log('📋 Sample vendor data:', data[0]);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Raw vendors fetched:', data.length);
+        console.log('📋 Sample vendor data:', data[0]);
+      }
 
       const processedVendors = data.map((v) => {
         const processed = {
@@ -274,17 +288,21 @@ export const AppDataProvider = ({ children }) => {
             : null,
         };
         
-        console.log('🔄 Processed vendor:', {
-          name: processed.shopName,
-          originalLocation: v.location,
-          processedCoordinates: processed.coordinates
-        });
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔄 Processed vendor:', {
+            name: processed.shopName,
+            originalLocation: v.location,
+            processedCoordinates: processed.coordinates
+          });
+        }
         
         return processed;
       });
 
-      console.log('✅ Processed vendors:', processedVendors.length);
-      console.log('📍 Vendors with coordinates:', processedVendors.filter(v => v.coordinates).length);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Processed vendors:', processedVendors.length);
+        console.log('📍 Vendors with coordinates:', processedVendors.filter(v => v.coordinates).length);
+      }
 
       setVendors(processedVendors);
       setError(null);
@@ -302,7 +320,9 @@ export const AppDataProvider = ({ children }) => {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (loading) {
-        console.warn('⚠️ Fetch vendors timeout - stopping loading state');
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('⚠️ Fetch vendors timeout - stopping loading state');
+        }
         setLoading(false);
         setError('Request timeout - please try again');
       }
@@ -413,14 +433,17 @@ export const AppDataProvider = ({ children }) => {
 
   const addProduct = useCallback(async (productData) => {
     try {
-      // This would typically make an API call
-      const newProduct = {
-        ...productData,
-        _id: Date.now().toString(),
-        available: true
-      };
-      setProducts(prev => [...(prev || []), newProduct]);
-      return newProduct;
+      // Make API call to add product
+      const response = await api.addVendorProduct(productData);
+      
+      if (response && response._id) {
+        // Add to local state
+        setProducts(prev => [...(prev || []), response]);
+        return response;
+      } else {
+        console.error('Failed to add product:', response);
+        return null;
+      }
     } catch (error) {
       console.error('Error adding product:', error);
       return null;
@@ -429,6 +452,10 @@ export const AppDataProvider = ({ children }) => {
 
   const deleteProduct = useCallback(async (productId) => {
     try {
+      // Make API call to delete product
+      await api.deleteVendorProduct(productId);
+      
+      // Remove from local state
       setProducts(prev => (prev || []).filter(p => p._id !== productId && p.id !== productId));
       return true;
     } catch (error) {
@@ -439,8 +466,16 @@ export const AppDataProvider = ({ children }) => {
 
   const updateVendorDetails = useCallback(async (details) => {
     try {
-      setVendorDetails(details);
-      return details;
+      // Update vendor profile via API
+      const response = await api.updateVendorProfile(details);
+      
+      if (response.success) {
+        setVendorDetails(response.vendor);
+        return response.vendor;
+      } else {
+        console.error('Failed to update vendor details:', response.message);
+        return null;
+      }
     } catch (error) {
       console.error('Error updating vendor details:', error);
       return null;
@@ -449,10 +484,27 @@ export const AppDataProvider = ({ children }) => {
 
   const fetchVendorData = useCallback(async (vendorId) => {
     try {
-      // This would typically fetch vendor-specific data
       console.log('Fetching vendor data for:', vendorId);
+      
+      // Fetch vendor profile and products
+      const [profileResponse, productsResponse] = await Promise.all([
+        api.getVendorProfile(),
+        api.getVendorProducts()
+      ]);
+      
+      if (profileResponse && profileResponse.success !== false) {
+        setVendorDetails(profileResponse);
+      }
+      
+      if (productsResponse && Array.isArray(productsResponse)) {
+        setProducts(productsResponse);
+      }
+      
     } catch (error) {
       console.error('Error fetching vendor data:', error);
+      // Set empty defaults if fetch fails
+      setProducts([]);
+      setVendorDetails(null);
     }
   }, []);
   /* -------------------- ANALYTICS -------------------- */

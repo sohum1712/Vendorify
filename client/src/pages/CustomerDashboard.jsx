@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Home, Clock, User, Store, Utensils, Carrot, Coffee, ShoppingBag, Bell, Star, ShieldCheck, ArrowRight, Filter, X, MapPin, Package, Tag, Navigation, Sparkles, RefreshCw, Loader2, Map, Layers, Zap, Heart } from 'lucide-react';
+import { Search, Home, Clock, User, Bell, Star, ShieldCheck, ArrowRight, Filter, X, MapPin, Package, Tag, Navigation, Sparkles, RefreshCw, Loader2, Map, Layers, Zap, Heart, Store } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CATEGORIES } from '../constants/roles';
 import { useAppData } from '../context/AppDataContext';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Navbar from '../components/common/Navbar';
@@ -12,7 +11,6 @@ import InteractiveVendorMap from '../components/map/InteractiveVendorMap';
 
 const CustomerDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('home');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [sortBy, setSortBy] = useState('distance');
@@ -122,20 +120,8 @@ const CustomerDashboard = () => {
     return "Detecting location...";
   };
 
-  const iconMap = {
-    Store,
-    Utensils,
-    Carrot,
-    Coffee,
-    ShoppingBag,
-  };
-
   useEffect(() => {
     let result = vendors || [];
-    
-    if (selectedCategory !== 'all') {
-      result = result.filter(v => v.category === selectedCategory);
-    }
     
     if (sortBy === 'distance' && userLocation) {
       result = [...result].sort((a, b) => (a.distance || 999) - (b.distance || 999));
@@ -146,7 +132,7 @@ const CustomerDashboard = () => {
     }
     
     setFilteredVendors(result);
-  }, [vendors, selectedCategory, sortBy, userLocation]);
+  }, [vendors, sortBy, userLocation]);
 
   useEffect(() => {
     const loadRoaming = async () => {
@@ -204,12 +190,12 @@ const CustomerDashboard = () => {
     
     setSearching(true);
     try {
-      const results = await searchVendors(query, selectedCategory);
+      const results = await searchVendors(query, 'all');
       setSearchResults(results);
     } finally {
       setSearching(false);
     }
-  }, [searchVendors, selectedCategory]);
+  }, [searchVendors]);
 
   const toggleFavorite = useCallback((vendorId, e) => {
     e.stopPropagation();
@@ -454,38 +440,11 @@ const CustomerDashboard = () => {
               </div>
             </div>
           </div>
-
-          {/* Premium Categories */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {CATEGORIES.map(category => {
-              const IconComponent = iconMap[category.icon];
-              const isActive = selectedCategory === category.id;
-              return (
-                <motion.button
-                  key={category.id}
-                  whileHover={{ y: -5 }}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`relative p-6 rounded-[32px] border transition-all duration-500 overflow-hidden ${isActive
-                      ? 'bg-[#1A6950] border-[#1A6950] text-white shadow-2xl shadow-[#1A6950]/20'
-                      : 'bg-white border-gray-100 text-gray-400 hover:border-[#CDF546]'
-                    }`}
-                >
-                  <div className={`relative z-10 flex flex-col gap-4 ${isActive ? 'items-start' : 'items-center text-center'}`}>
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-500 ${isActive ? 'bg-[#CDF546] text-gray-900 rotate-12' : 'bg-gray-50'
-                      }`}>
-                      {IconComponent && <IconComponent size={24} />}
-                    </div>
-                    <span className="text-[11px] font-black uppercase tracking-[0.2em]">{category.name}</span>
-                  </div>
-                </motion.button>
-              );
-            })}
-          </div>
         </div>
       </div>
 
       {/* Enhanced Location Display */}
-      {userLocation && (
+      {/* {userLocation && (
         <div className="max-w-7xl mx-auto px-6 pb-10">
           <div className="bg-gradient-to-r from-[#1A6950] to-emerald-700 rounded-[32px] p-6 text-white flex items-center justify-between shadow-2xl border-2 border-white/10">
             <div className="flex items-center gap-4">
@@ -517,7 +476,7 @@ const CustomerDashboard = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Premium Quick Actions Section */}
       <div className="max-w-7xl mx-auto px-6 pb-10">
@@ -583,7 +542,7 @@ const CustomerDashboard = () => {
 
           <motion.div
             whileHover={{ y: -5 }}
-            className="bg-gradient-to-br from-orange-500 to-red-500 rounded-[32px] p-6 text-white cursor-pointer shadow-xl hover:shadow-2xl transition-all"
+            className="bg-gradient-to-br from-[#1A6950] to-emerald-700  rounded-[32px] p-6 text-white cursor-pointer shadow-xl hover:shadow-2xl transition-all"
             onClick={() => setShowNotifications(true)}
           >
             <div className="flex items-center gap-4 mb-4">
@@ -596,13 +555,13 @@ const CustomerDashboard = () => {
                 )}
               </div>
               <div>
-                <h3 className="font-black uppercase tracking-tight">Updates</h3>
-                <p className="text-white/70 text-sm">{(notifications || []).filter(n => n.unread).length} new alerts</p>
+                <h3 className="font-black uppercase tracking-tight text-white">Updates</h3>
+                <p className="text-white/80 text-sm">{(notifications || []).filter(n => n.unread).length} new alerts</p>
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-widest">Check</span>
-              <ArrowRight size={16} />
+              <span className="text-xs font-bold uppercase tracking-widest text-white">Check</span>
+              <ArrowRight size={16} className="text-white" />
             </div>
           </motion.div>
         </div>
@@ -992,13 +951,13 @@ const CustomerDashboard = () => {
                 {loading 
                   ? 'Please wait while we fetch the best vendors near you.'
                   : searchQuery 
-                    ? `No vendors match "${searchQuery}". Try a different search term or explore our categories.`
-                    : 'No vendors available in this category. Try selecting a different category or check back later.'}
+                    ? `No vendors match "${searchQuery}". Try a different search term or check back later.`
+                    : 'No vendors available at the moment. Please check back later.'}
               </p>
               {!loading && (
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <button
-                    onClick={() => { setSearchQuery(''); setSelectedCategory('all'); setSearchResults(null); }}
+                    onClick={() => { setSearchQuery(''); setSearchResults(null); }}
                     className="bg-[#CDF546] text-gray-900 px-8 py-4 rounded-2xl font-bold uppercase tracking-widest text-sm shadow-lg hover:bg-[#b8e635] transition-all"
                   >
                     Clear Filters

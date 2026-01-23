@@ -49,6 +49,11 @@ class ApiClient {
   async handleResponse(response) {
     const data = await response.json();
 
+    // FIXED: Log network requests in development only
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🌐 ${response.url.split('/').pop()} - ${response.url} - ${response.status} - ${response.ok ? 'Success' : data.message}`);
+    }
+
     if (!response.ok) {
       // Handle specific error cases
       if (response.status === 401) {
@@ -180,7 +185,9 @@ class ApiClient {
       await this.post("/auth/logout");
     } catch (error) {
       // Continue with logout even if API call fails
-      console.warn("Logout API call failed:", error);
+      if (process.env.NODE_ENV === 'development') {
+        console.warn("Logout API call failed:", error);
+      }
     } finally {
       this.clearAuth();
       authToasts.logoutSuccess();
@@ -189,10 +196,13 @@ class ApiClient {
 
   async getCurrentUser() {
     try {
-      return await this.get("/auth/me");
+      const response = await this.get("/auth/me");
+      return response;
     } catch (error) {
       // If getCurrentUser fails, it means the token is invalid
-      console.log('getCurrentUser failed, clearing auth data:', error.message);
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('getCurrentUser failed, clearing auth data:', error.message);
+      }
       this.clearAuth();
       throw error;
     }
@@ -211,6 +221,53 @@ class ApiClient {
     } catch (error) {
       return { valid: false, reason: error.message };
     }
+  }
+
+  // Vendor-specific API methods
+  async getVendorProfile() {
+    return this.get('/vendors/profile');
+  }
+
+  async getVendorStats() {
+    return this.get('/vendors/dashboard/stats');
+  }
+
+  async updateVendorProfile(profileData) {
+    return this.put('/vendors/profile', profileData);
+  }
+
+  async toggleVendorStatus(isOnline) {
+    return this.post('/vendors/dashboard/toggle-status', { isOnline });
+  }
+
+  async uploadShopPhoto(formData) {
+    return this.request('/vendors/upload/shop-photo', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`
+      }
+    });
+  }
+
+  async addVendorProduct(productData) {
+    const response = await this.post('/vendors/products', productData);
+    // FIXED: Handle new response format
+    return response.success ? response.product : response;
+  }
+
+  async getVendorProducts() {
+    const response = await this.get('/vendors/products');
+    // FIXED: Handle new response format
+    return response.success ? response.products : response;
+  }
+
+  async deleteVendorProduct(productId) {
+    return this.delete(`/vendors/products/${productId}`);
+  }
+
+  async updateLiveLocation(latitude, longitude) {
+    return this.post('/vendors/location/live', { latitude, longitude });
   }
 
   // Reverse geocoding using backend proxy to OpenStreetMap Nominatim

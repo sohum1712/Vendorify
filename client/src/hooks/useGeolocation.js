@@ -101,7 +101,9 @@ export const useGeolocation = (onUpdate, interval = 120000) => {
               timestamp: position.timestamp,
             };
 
-            console.log('✅ Location obtained with accuracy:', coords.accuracy, 'meters');
+            if (process.env.NODE_ENV === 'development') {
+              console.log('✅ Location obtained with accuracy:', coords.accuracy, 'meters');
+            }
 
             // Get address information
             const addressInfo = await reverseGeocode(coords.lat, coords.lng);
@@ -134,7 +136,9 @@ export const useGeolocation = (onUpdate, interval = 120000) => {
             setError(null);
             setLoading(false);
             
-            console.log('📍 Location updated with address:', newLocation);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('📍 Location updated with address:', newLocation);
+            }
             
             if (onUpdate) onUpdate(newLocation);
           } catch (err) {
@@ -159,7 +163,9 @@ export const useGeolocation = (onUpdate, interval = 120000) => {
           }
         },
         (err) => {
-          console.warn('High accuracy failed, trying low accuracy:', err.message);
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('High accuracy failed, trying low accuracy:', err.message);
+          }
           // Fallback to low accuracy
           tryLowAccuracy();
         },
@@ -182,7 +188,9 @@ export const useGeolocation = (onUpdate, interval = 120000) => {
               timestamp: position.timestamp,
             };
 
-            console.log('⚠️ Location obtained with lower accuracy:', coords.accuracy, 'meters');
+            if (process.env.NODE_ENV === 'development') {
+              console.log('⚠️ Location obtained with lower accuracy:', coords.accuracy, 'meters');
+            }
 
             // Get address information
             const addressInfo = await reverseGeocode(coords.lat, coords.lng);
@@ -215,7 +223,9 @@ export const useGeolocation = (onUpdate, interval = 120000) => {
             setError(null);
             setLoading(false);
             
-            console.log('📍 Location updated (low accuracy):', newLocation);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('📍 Location updated (low accuracy):', newLocation);
+            }
             
             if (onUpdate) onUpdate(newLocation);
           } catch (err) {

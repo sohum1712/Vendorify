@@ -17,6 +17,22 @@ export const AuthProvider = ({ children }) => {
   // Fetch current user from token
   const fetchCurrentUser = useCallback(async () => {
     const token = localStorage.getItem('vendorify_token');
+    const sessionId = sessionStorage.getItem('vendorify_session_id');
+    
+    // Check if this is a new browser session
+    if (!sessionId) {
+      // New session - clear any existing auth data
+      if (process.env.NODE_ENV === 'development') {
+        console.log('New browser session detected, clearing auth data');
+      }
+      localStorage.removeItem('vendorify_token');
+      localStorage.removeItem('vendorify_user');
+      localStorage.removeItem('vendorify_refresh_token');
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+    
     if (!token) {
       setUser(null);
       setLoading(false);
@@ -30,14 +46,18 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('vendorify_user', JSON.stringify(response.user));
       } else {
         // Invalid response, clear auth data
-        console.log('Invalid user response, clearing auth data');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Invalid user response, clearing auth data');
+        }
         setUser(null);
         apiClient.clearAuth();
       }
     } catch (error) {
       console.error('Fetch current user error:', error);
       // Token is invalid or expired, clear auth data
-      console.log('Token validation failed, clearing auth data');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Token validation failed, clearing auth data');
+      }
       apiClient.clearAuth();
       setUser(null);
     } finally {
@@ -46,6 +66,11 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    // Generate session ID for new browser sessions
+    if (!sessionStorage.getItem('vendorify_session_id')) {
+      sessionStorage.setItem('vendorify_session_id', Date.now().toString());
+    }
+    
     fetchCurrentUser();
   }, [fetchCurrentUser]);
 
@@ -94,6 +119,9 @@ export const AuthProvider = ({ children }) => {
       if (response.success && response.user) {
         setUser(response.user);
         
+        // Set session ID to maintain session
+        sessionStorage.setItem('vendorify_session_id', Date.now().toString());
+        
         // Return user data, let the component handle navigation
         return { success: true, user: response.user };
       }
@@ -115,6 +143,9 @@ export const AuthProvider = ({ children }) => {
       
       if (response.success && response.user) {
         setUser(response.user);
+        
+        // Set session ID to maintain session
+        sessionStorage.setItem('vendorify_session_id', Date.now().toString());
         
         // Navigate based on role - don't navigate here, let the component handle it
         return { success: true, user: response.user };
@@ -143,6 +174,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('vendorify_user');
       // Also clear any other potential auth-related data
       localStorage.removeItem('vendorify_refresh_token');
+      // Clear session storage
+      sessionStorage.removeItem('vendorify_session_id');
       // Disconnect socket
       if (socket) {
         socket.disconnect();
@@ -157,6 +190,7 @@ export const AuthProvider = ({ children }) => {
   const forceLogout = () => {
     setUser(null);
     localStorage.clear(); // Clear all localStorage data
+    sessionStorage.clear(); // Clear all sessionStorage data
     if (socket) {
       socket.disconnect();
       setSocket(null);

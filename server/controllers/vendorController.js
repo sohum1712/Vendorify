@@ -1,6 +1,7 @@
 const Vendor = require('../models/Vendor');
 const Product = require('../models/Product');
 const path = require('path');
+const Logger = require('../utils/logger');
 
 // --- Vendor Profile Controllers ---
 
@@ -9,18 +10,31 @@ const VendorProfileHistory = require('../models/VendorProfileHistory');
 exports.getVendorProfile = async (req, res) => {
     try {
         const vendor = await Vendor.findOne({ userId: req.user.id });
-        if (!vendor) return res.status(404).json({ message: 'Vendor not found' });
+        if (!vendor) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Vendor profile not found. Please complete your profile setup.' 
+            });
+        }
         
-        console.log('Vendor profile retrieved:', {
+        Logger.info('Vendor profile retrieved:', {
             id: vendor._id,
             shopName: vendor.shopName,
             image: vendor.image,
             address: vendor.address
         });
         
-        res.json(vendor);
+        res.json({
+            success: true,
+            ...vendor.toObject()
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        Logger.error('Get vendor profile error:', err);
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to fetch vendor profile',
+            error: err.message 
+        });
     }
 };
 
@@ -71,7 +85,7 @@ exports.updateVendorProfile = async (req, res) => {
             vendor: updatedVendor
         });
     } catch (err) {
-        console.error('Update vendor profile error:', err);
+        Logger.error('Update vendor profile error:', err);
         res.status(500).json({ 
             success: false,
             message: 'Failed to update profile',
@@ -138,7 +152,7 @@ exports.updateLocation = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Update location error:', err);
+        Logger.error('Update location error:', err);
         res.status(500).json({ 
             success: false,
             message: 'Failed to update location',
@@ -172,7 +186,7 @@ exports.updateLiveLocation = async (req, res) => {
                 address = data.display_name || data.locality || address;
             }
         } catch (geocodeError) {
-            console.log('Reverse geocoding failed, using coordinates as address');
+            Logger.info('Reverse geocoding failed, using coordinates as address');
         }
 
         const updateData = {
@@ -219,7 +233,7 @@ exports.updateLiveLocation = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Update live location error:', err);
+        Logger.error('Update live location error:', err);
         res.status(500).json({
             success: false,
             message: 'Failed to update live location',
@@ -232,7 +246,7 @@ exports.updateLiveLocation = async (req, res) => {
 
 exports.uploadShopPhoto = async (req, res) => {
     try {
-        console.log('Upload request received:', {
+        Logger.info('Upload request received:', {
             file: req.file ? {
                 filename: req.file.filename,
                 originalname: req.file.originalname,
@@ -251,7 +265,7 @@ exports.uploadShopPhoto = async (req, res) => {
 
         const imageUrl = `/uploads/shops/${req.file.filename}`;
         
-        console.log('Updating vendor with image URL:', imageUrl);
+        Logger.info('Updating vendor with image URL:', imageUrl);
         
         const vendor = await Vendor.findOneAndUpdate(
             { userId: req.user.id },
@@ -266,7 +280,7 @@ exports.uploadShopPhoto = async (req, res) => {
             });
         }
 
-        console.log('Vendor updated successfully:', {
+        Logger.info('Vendor updated successfully:', {
             vendorId: vendor._id,
             image: vendor.image
         });
@@ -281,7 +295,7 @@ exports.uploadShopPhoto = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Upload shop photo error:', err);
+        Logger.error('Upload shop photo error:', err);
         res.status(500).json({
             success: false,
             message: 'Failed to upload shop photo',
@@ -308,7 +322,7 @@ exports.uploadProductImage = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Upload product images error:', err);
+        Logger.error('Upload product images error:', err);
         res.status(500).json({
             success: false,
             message: 'Failed to upload product images',
@@ -345,33 +359,126 @@ exports.searchVendors = async (req, res) => {
 exports.getProducts = async (req, res) => {
     try {
         const vendor = await Vendor.findOne({ userId: req.user.id });
-        const products = await Product.find({ vendorId: vendor._id });
-        res.json(products);
+        if (!vendor) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Vendor not found' 
+            });
+        }
+
+        const products = await Product.find({ vendorId: vendor._id }).sort({ createdAt: -1 });
+        
+        res.json({
+            success: true,
+            products
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        Logger.error('Get products error:', err);
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to fetch products',
+            error: err.message 
+        });
     }
 };
 
 exports.addProduct = async (req, res) => {
     try {
+        const { name, description, price, category, image, calories, ingredients } = req.body;
+
+        // FIXED: Input validation
+        if (!name || !price) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Product name and price are required' 
+            });
+        }
+
+        if (price <= 0) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Price must be greater than 0' 
+            });
+        }
+
         const vendor = await Vendor.findOne({ userId: req.user.id });
+        if (!vendor) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Vendor not found' 
+            });
+        }
+
         const newProduct = new Product({
-            ...req.body,
-            vendorId: vendor._id
+            vendorId: vendor._id,
+            name: name.trim(),
+            description: description?.trim(),
+            price: parseFloat(price),
+            category: category || 'other',
+            image,
+            calories,
+            ingredients: Array.isArray(ingredients) ? ingredients : []
         });
+
         await newProduct.save();
-        res.status(201).json(newProduct);
+        
+        res.status(201).json({
+            success: true,
+            message: 'Product added successfully',
+            product: newProduct
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        Logger.error('Add product error:', err);
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to add product',
+            error: err.message 
+        });
     }
 };
 
 exports.deleteProduct = async (req, res) => {
     try {
-        await Product.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Product deleted' });
+        const productId = req.params.id;
+        
+        // FIXED: Validate product ID
+        if (!productId) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Product ID is required' 
+            });
+        }
+
+        const vendor = await Vendor.findOne({ userId: req.user.id });
+        if (!vendor) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Vendor not found' 
+            });
+        }
+
+        // FIXED: Verify product ownership before deletion
+        const product = await Product.findOne({ _id: productId, vendorId: vendor._id });
+        if (!product) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Product not found or not owned by this vendor' 
+            });
+        }
+
+        await Product.findByIdAndDelete(productId);
+        
+        res.json({ 
+            success: true,
+            message: 'Product deleted successfully' 
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        Logger.error('Delete product error:', err);
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to delete product',
+            error: err.message 
+        });
     }
 };
 
@@ -422,7 +529,7 @@ exports.aiGenerateMenu = async (req, res) => {
         });
 
     } catch (err) {
-        console.error("AI Generation Error:", err);
+        Logger.error("AI Generation Error:", err);
         // Fallback if AI fails (e.g., no API key)
         res.json({
             name: query,
@@ -498,7 +605,7 @@ exports.getDashboardStats = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Get dashboard stats error:', err);
+        Logger.error('Get dashboard stats error:', err);
         res.status(500).json({
             success: false,
             message: 'Failed to get dashboard stats',
@@ -539,7 +646,7 @@ exports.toggleOnlineStatus = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Toggle online status error:', err);
+        Logger.error('Toggle online status error:', err);
         res.status(500).json({
             success: false,
             message: 'Failed to update online status',
@@ -649,7 +756,7 @@ exports.processVoiceCommand = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Voice command error:', err);
+        Logger.error('Voice command error:', err);
         res.status(500).json({
             success: false,
             message: 'Failed to process voice command',

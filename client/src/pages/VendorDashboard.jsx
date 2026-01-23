@@ -58,12 +58,15 @@ const VendorDashboard = () => {
       ]);
       
       if (statsResponse.success) {
-        setDashboardStats(statsResponse.stats);
+        setDashboardStats(prev => ({
+          ...prev,
+          ...statsResponse.stats
+        }));
         setIsOnline(statsResponse.stats.isOnline);
       }
       
-      // FIXED: Get vendor profile for complete data including image
-      if (profileResponse) {
+      // Update with vendor profile data
+      if (profileResponse && profileResponse.success !== false) {
         setDashboardStats(prev => ({
           ...prev,
           shopImage: profileResponse.image,
@@ -79,8 +82,15 @@ const VendorDashboard = () => {
       }
     } catch (error) {
       console.error('Failed to fetch dashboard stats:', error);
+      // Set default values if API fails
+      setDashboardStats(prev => ({
+        ...prev,
+        shopName: user?.name ? `${user.name}'s Shop` : 'My Shop',
+        ownerName: user?.name || 'Owner',
+        address: 'Location not set'
+      }));
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (user && user.role === 'vendor') {
@@ -143,7 +153,14 @@ const VendorDashboard = () => {
       
       if (response.success) {
         toast.success('Shop photo updated successfully');
+        // Update the dashboard stats to reflect the new image
+        setDashboardStats(prev => ({
+          ...prev,
+          shopImage: response.imageUrl
+        }));
         fetchDashboardStats(); // Refresh to get updated image
+      } else {
+        toast.error(response.message || 'Failed to upload shop photo');
       }
     } catch (error) {
       console.error('Failed to upload shop photo:', error);
