@@ -68,18 +68,25 @@ const Login = () => {
 
     setIsLoading(true);
     try {
+      console.log('Attempting login with:', { email: formData.email, role: formData.role });
+      
       const result = await login({
         email: formData.email.toLowerCase().trim(),
         password: formData.password
       });
 
+      console.log('Login result:', result);
+
       if (result.success && result.user) {
+        console.log('Login successful, navigating to dashboard...');
         // Navigate to appropriate dashboard
         navigateToDashboard(navigate, result.user);
       } else {
+        console.error('Login failed:', result.message);
         setErrors({ submit: result.message });
       }
     } catch (error) {
+      console.error('Login error:', error);
       setErrors({ submit: error.message || 'Login failed. Please try again.' });
     } finally {
       setIsLoading(false);

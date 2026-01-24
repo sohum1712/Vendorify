@@ -139,34 +139,87 @@ router.get("/all", async (req, res) => {
 
 router.get("/roaming", async (req, res) => {
   try {
-    const { lat, lng } = req.query;
+    const { lat, lng, radius = 5000 } = req.query;
 
-    const vendors = await Vendor.find({
+    let query = {
       "schedule.isRoaming": true,
       isOnline: true,
-    }).select("-userId");
+    };
 
-    let result = vendors;
-
+    // Add geospatial query if coordinates provided
     if (lat && lng) {
-      result = vendors
-        .map((vendor) => {
-          const vendorCoords = vendor.location?.coordinates || [0, 0];
-          const distance = calculateDistance(
-            parseFloat(lat),
-            parseFloat(lng),
-            vendorCoords[1],
-            vendorCoords[0],
-          );
-          return {
-            ...vendor.toObject(),
-            distance: Math.round(distance * 10) / 10,
-          };
-        })
-        .sort((a, b) => a.distance - b.distance);
+      query.location = {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [parseFloat(lng), parseFloat(lat)],
+          },
+          $maxDistance: parseInt(radius),
+        },
+      };
     }
 
-    res.json(result);
+    const vendors = await Vendor.find(query).select("-userId").limit(50);
+
+    // Calculate distance and ETA for each vendor
+    const vendorsWithDetails = vendors.map((vendor) => {
+      const vendorObj = vendor.toObject();
+      
+      if (lat && lng && vendor.location.coordinates) {
+        const distance = calculateDistance(
+          parseFloat(lat),
+          parseFloat(lng),
+          vendor.location.coordinates[1],
+          vendor.location.coordinates[0]
+        );
+        vendorObj.distance = Math.round(distance * 10) / 10;
+      }
+
+      // Calculate ETA to current stop
+      if (vendor.schedule.estimatedArrival) {
+        const now = new Date();
+        const eta = vendor.schedule.estimatedArrival;
+        vendorObj.etaMinutes = Math.max(0, Math.round((eta - now) / (1000 * 60)));
+      }
+
+      return vendorObj;
+    });
+
+    res.json({
+      success: true,
+      vendors: vendorsWithDetails,
+      count: vendorsWithDetails.length
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get roaming vendor route details
+router.get("/roaming/:id/route", async (req, res) => {
+  try {
+    const vendor = await Vendor.findById(req.params.id).select("schedule shopName");
+    
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    if (!vendor.schedule.isRoaming) {
+      return res.status(400).json({ message: "Vendor is not roaming" });
+    }
+
+    res.json({
+      success: true,
+      vendorName: vendor.shopName,
+      route: {
+        routeName: vendor.schedule.routeName,
+        currentStop: vendor.schedule.currentStop,
+        estimatedArrival: vendor.schedule.estimatedArrival,
+        nextStops: vendor.schedule.nextStops,
+        isMoving: vendor.schedule.isMoving,
+        speed: vendor.schedule.speed
+      }
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

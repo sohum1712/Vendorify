@@ -19,6 +19,18 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('vendorify_token');
     const sessionId = sessionStorage.getItem('vendorify_session_id');
     
+    // Set a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.warn('Auth loading timeout - clearing auth data');
+        setUser(null);
+        setLoading(false);
+        localStorage.removeItem('vendorify_token');
+        localStorage.removeItem('vendorify_user');
+        sessionStorage.removeItem('vendorify_session_id');
+      }
+    }, 10000); // 10 second timeout
+    
     // Check if this is a new browser session
     if (!sessionId) {
       // New session - clear any existing auth data
@@ -30,12 +42,14 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('vendorify_refresh_token');
       setUser(null);
       setLoading(false);
+      clearTimeout(timeoutId);
       return;
     }
     
     if (!token) {
       setUser(null);
       setLoading(false);
+      clearTimeout(timeoutId);
       return;
     }
 
@@ -62,8 +76,9 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
     } finally {
       setLoading(false);
+      clearTimeout(timeoutId);
     }
-  }, []);
+  }, [loading]);
 
   useEffect(() => {
     // Generate session ID for new browser sessions
@@ -77,8 +92,9 @@ export const AuthProvider = ({ children }) => {
   // Listen for storage changes (logout in another tab)
   useEffect(() => {
     const handleStorageChange = (e) => {
-      if (e.key === 'vendorify_token' && !e.newValue) {
-        // Token was removed, clear user state
+      if (e.key === 'vendorify_token' && !e.newValue && user) {
+        // Token was removed, clear user state but don't show logout message
+        // (it was already shown in the tab that initiated logout)
         setUser(null);
         if (socket) {
           socket.disconnect();
@@ -89,7 +105,7 @@ export const AuthProvider = ({ children }) => {
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [socket]);
+  }, [socket, user]);
 
   // Socket Connection Management
   useEffect(() => {

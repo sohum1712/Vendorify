@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, Package, TrendingUp, Star, Plus, MapPin, MessageCircle, Camera, Settings, Bell, DollarSign, Trash2, AlertTriangle, Loader, Upload, X, Utensils } from 'lucide-react';
+import { Store, Package, TrendingUp, Star, Plus, MapPin, MessageCircle, Camera, Settings, Bell, DollarSign, Trash2, AlertTriangle, Loader, Upload, X, Utensils, Navigation as RouteIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import VendorVoiceAssistant from '../components/vendor/VendorVoiceAssistant';
@@ -8,10 +8,15 @@ import AIProductListing from '../components/vendor/AIProductListing';
 import AddProductModal from '../components/vendor/AddProductModal';
 import ShopDetailsModal from '../components/vendor/ShopDetailsModal';
 import VendorAnalytics from '../components/vendor/VendorAnalytics';
+import RoamingScheduleModal from '../components/vendor/RoamingScheduleModal';
+import RoamingTracker from '../components/vendor/RoamingTracker';
+import SubscriptionPlans from '../components/vendor/SubscriptionPlans';
+import VendorRouteSimulation from '../components/map/VendorRouteSimulation';
 import Navbar from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
 import { toast } from 'react-toastify';
 import apiClient from '../utils/api';
+import { coordinatesToAddress, formatLocationForDisplay } from '../utils/locationUtils';
 
 const EnhancedVendorDashboard = () => {
   const { user } = useAuth();
@@ -40,6 +45,12 @@ const EnhancedVendorDashboard = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showProductSettings, setShowProductSettings] = useState(null);
+  const [showRoamingSchedule, setShowRoamingSchedule] = useState(false);
+  const [showSubscriptionPlans, setShowSubscriptionPlans] = useState(false);
+  const [showRouteSimulation, setShowRouteSimulation] = useState(false);
+
+  // Vendor data state
+  const [vendorData, setVendorData] = useState(null);
 
   // Profile edit state - FIXED: Include all vendor fields including image
   const [profileData, setProfileData] = useState({
@@ -57,6 +68,22 @@ const EnhancedVendorDashboard = () => {
   // Location tracking
   const [currentLocation, setCurrentLocation] = useState(null);
   const [locationError, setLocationError] = useState(null);
+  const [formattedAddress, setFormattedAddress] = useState('Location not set');
+
+  // Format address for display
+  const formatAddressDisplay = useCallback(async (coordinates) => {
+    if (!coordinates || !coordinates.lat || !coordinates.lng) {
+      return 'Location not set';
+    }
+
+    try {
+      const locationData = await coordinatesToAddress(coordinates.lat, coordinates.lng);
+      return formatLocationForDisplay(locationData, 'full');
+    } catch (error) {
+      console.error('Failed to format address:', error);
+      return `${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`;
+    }
+  }, []);
 
   // Fetch dashboard data
   const fetchDashboardData = useCallback(async () => {
@@ -98,6 +125,8 @@ const EnhancedVendorDashboard = () => {
           image: profileResponse.image || null // ADDED: Include image in profile data
         });
 
+        // Set vendor data for roaming components
+        setVendorData(profileResponse);
       }
 
       if (Array.isArray(productsResponse)) {
@@ -129,10 +158,15 @@ const EnhancedVendorDashboard = () => {
           const response = await apiClient.updateLiveLocation(latitude, longitude);
           
           if (response.success) {
+            // Format the address using coordinates
+            const formattedAddr = await formatAddressDisplay({ lat: latitude, lng: longitude });
+            
             setDashboardStats(prev => ({ 
               ...prev, 
-              address: response.vendor.address 
+              address: formattedAddr
             }));
+            
+            setFormattedAddress(formattedAddr);
             
             // Show success message only on manual update
             if (!locationUpdating) {
@@ -452,7 +486,7 @@ const EnhancedVendorDashboard = () => {
               <div className="flex items-center gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-2">
                   <MapPin size={16} />
-                  <span>{dashboardStats.address}</span>
+                  <span>{formattedAddress || dashboardStats.address}</span>
                   {locationUpdating && (
                     <Loader size={12} className="animate-spin text-[#1A6950]" />
                   )}
@@ -554,7 +588,7 @@ const EnhancedVendorDashboard = () => {
           
           <div className="space-y-2">
             <p className="text-sm text-gray-600">
-              <strong>Current:</strong> {dashboardStats.address}
+              <strong>Current:</strong> {formattedAddress || dashboardStats.address}
             </p>
             <p className="text-xs text-gray-500">
               {dashboardStats.isOnline 
@@ -568,6 +602,25 @@ const EnhancedVendorDashboard = () => {
               </p>
             )}
           </div>
+        </div>
+
+        {/* Roaming Vendor Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-black text-gray-900">Roaming Vendor</h2>
+            <button
+              onClick={() => setShowRoamingSchedule(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-[12px] hover:bg-blue-700"
+            >
+              <RouteIcon size={16} />
+              {vendorData?.schedule?.isRoaming ? 'Edit Schedule' : 'Set Schedule'}
+            </button>
+          </div>
+          
+          <RoamingTracker 
+            vendorData={vendorData} 
+            onUpdate={fetchDashboardData}
+          />
         </div>
 
         {/* Quick Actions */}
@@ -628,6 +681,42 @@ const EnhancedVendorDashboard = () => {
             <p className="font-bold text-gray-900">Shop Photo</p>
             <p className="text-xs text-gray-600">{dashboardStats.shopImage ? 'Change photo' : 'Upload image'}</p>
           </label>
+        </div>
+
+        {/* Subscription Plans Section */}
+        <div className="bg-gradient-to-r from-[#1A6950] to-emerald-700 rounded-[24px] p-8 mb-8 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-2xl font-black uppercase tracking-tight mb-2">
+                Grow Your Business
+              </h3>
+              <p className="text-white/80 mb-4">
+                Upgrade to Pro or Premium for better features and lower commission rates
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="bg-white/20 px-4 py-2 rounded-2xl">
+                  <span className="text-sm font-bold">Current: Basic Plan</span>
+                </div>
+                <div className="bg-red-500 px-4 py-2 rounded-2xl">
+                  <span className="text-sm font-bold">8% Commission</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSubscriptionPlans(true)}
+                className="bg-[#CDF546] text-gray-900 px-6 py-3 rounded-2xl font-bold hover:bg-[#b8e635] transition-all"
+              >
+                View Plans
+              </button>
+              <button
+                onClick={() => setShowRouteSimulation(true)}
+                className="bg-white/20 text-white px-6 py-3 rounded-2xl font-bold hover:bg-white/30 transition-all"
+              >
+                Route Demo
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Products Grid */}
@@ -759,6 +848,33 @@ const EnhancedVendorDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Roaming Schedule Modal */}
+      <RoamingScheduleModal
+        isOpen={showRoamingSchedule}
+        onClose={() => setShowRoamingSchedule(false)}
+        vendorData={vendorData}
+        onUpdate={(updatedSchedule) => {
+          setVendorData(prev => ({
+            ...prev,
+            schedule: updatedSchedule
+          }));
+          fetchDashboardData();
+        }}
+      />
+
+      {/* Subscription Plans Modal */}
+      <SubscriptionPlans
+        isOpen={showSubscriptionPlans}
+        onClose={() => setShowSubscriptionPlans(false)}
+        currentPlan="basic"
+      />
+
+      {/* Route Simulation Modal */}
+      <VendorRouteSimulation
+        isOpen={showRouteSimulation}
+        onClose={() => setShowRouteSimulation(false)}
+      />
 
       <Footer />
     </div>

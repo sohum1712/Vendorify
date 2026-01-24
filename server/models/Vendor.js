@@ -6,7 +6,11 @@ const scheduleStopSchema = new mongoose.Schema({
     coordinates: {
         type: { type: String, default: 'Point' },
         coordinates: [Number]
-    }
+    },
+    estimatedArrival: Date,
+    actualArrival: Date,
+    stopDuration: { type: Number, default: 30 }, // minutes
+    isCompleted: { type: Boolean, default: false }
 }, { _id: false });
 
 const dealSchema = new mongoose.Schema({
@@ -83,7 +87,14 @@ const vendorSchema = new mongoose.Schema({
         isRoaming: { type: Boolean, default: false },
         currentStop: String,
         nextStops: [scheduleStopSchema],
-        operatingHours: { type: String, default: '10:00 AM - 9:00 PM' }
+        operatingHours: { type: String, default: '10:00 AM - 9:00 PM' },
+        // Enhanced roaming fields
+        routeName: String, // e.g., "Downtown Route", "University Circuit"
+        estimatedArrival: Date, // ETA at current stop
+        isMoving: { type: Boolean, default: false },
+        speed: { type: Number, default: 0 }, // km/h
+        heading: { type: Number, default: 0 }, // degrees
+        lastUpdated: { type: Date, default: Date.now }
     },
     deals: [dealSchema],
     lastLocationUpdate: Date,
@@ -97,5 +108,7 @@ const vendorSchema = new mongoose.Schema({
 vendorSchema.index({ address: 'text', shopName: 'text' });
 vendorSchema.index({ category: 1 });
 vendorSchema.index({ isOnline: 1 });
+vendorSchema.index({ 'schedule.isRoaming': 1 });
+vendorSchema.index({ location: '2dsphere' });
 
 module.exports = mongoose.model('Vendor', vendorSchema);

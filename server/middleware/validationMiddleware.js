@@ -172,6 +172,13 @@ const vendorValidation = {
     { field: 'category', required: false, type: 'string', min: 2, max: 50 },
     { field: 'calories', required: false, type: 'string', max: 20 },
     { field: 'ingredients', required: false, type: 'object' }
+  ]),
+
+  setRoamingSchedule: createValidator([
+    { field: 'isRoaming', required: true, type: 'boolean' },
+    { field: 'routeName', required: false, type: 'string', min: 2, max: 100 },
+    { field: 'stops', required: false, type: 'object' },
+    { field: 'operatingHours', required: false, type: 'string', min: 5, max: 50 }
   ])
 };
 

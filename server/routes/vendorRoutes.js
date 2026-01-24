@@ -34,6 +34,12 @@ router.post('/ai/generate', protect, rateLimitValidation, vendorController.aiGen
 // Voice Routes
 router.post('/voice/command', protect, rateLimitValidation, vendorController.processVoiceCommand);
 
+// Roaming Vendor Routes
+router.post('/roaming/schedule', protect, vendorValidation.setRoamingSchedule, vendorController.setRoamingSchedule);
+router.post('/roaming/location', protect, rateLimitValidation, vendorController.updateRoamingLocation);
+router.post('/roaming/complete-stop', protect, vendorController.completeStop);
+router.get('/roaming/nearby', vendorController.getRoamingVendors);
+
 // Test route for debugging
 router.get('/test/image/:filename', (req, res) => {
     const path = require('path');

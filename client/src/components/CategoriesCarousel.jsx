@@ -1,79 +1,78 @@
 
-import React, { useRef, useState } from "react";
+import { useRef } from "react";
+import SafeImage from "./common/SafeImage";
 
 export default function CategoriesCarousel() {
   const ref = useRef(null);
-  const [imageErrors, setImageErrors] = useState({});
 
   const categories = [
     {
       title: "Vegetables",
       hindi: "ताज़ी सब्ज़ियाँ",
-      image: "https://picsum.photos/seed/vegetables/400/400",
+      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSVGjSYk0H8hRSXqMhzxz1U56aeZfwGYqoFtA&s",
+      fallback: "https://picsum.photos/400/400?random=1",
       gradient: "from-[#1A6950] to-[#2D8A6A]",
       shadow: "group-hover:shadow-[0_20px_50px_-12px_rgba(26,105,80,0.5)]",
     },
     {
       title: "Fruits",
       hindi: "ताज़े फल",
-      image: "https://picsum.photos/400/400?random=2",
+      image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400&h=400&fit=crop&crop=center",
+      fallback: "https://picsum.photos/400/400?random=2",
       gradient: "from-[#F56013] to-[#FF8A4C]",
       shadow: "group-hover:shadow-[0_20px_50px_-12px_rgba(245,96,19,0.5)]",
     },
     {
       title: "Street Food",
       hindi: "चटपटी चाट",
-      image: "https://picsum.photos/400/400?random=3",
+      image: "https://images.unsplash.com/photo-1554978991-33ef7f31d658?w=400&h=400&fit=crop&crop=center",
+      fallback: "https://picsum.photos/400/400?random=3",
       gradient: "from-[#84A02A] to-[#CDF546]",
       shadow: "group-hover:shadow-[0_20px_50px_-12px_rgba(205,245,70,0.5)]",
     },
     {
       title: "Tea & Coffee",
       hindi: "गरमा गरम चाय",
-      image: "https://picsum.photos/400/400?random=4",
+      image: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=400&fit=crop&crop=center",
+      fallback: "https://picsum.photos/400/400?random=4",
       gradient: "from-[#8D5824] to-[#A67C52]",
       shadow: "group-hover:shadow-[0_20px_50px_-12px_rgba(141,88,36,0.5)]",
     },
     {
       title: "Flowers",
       hindi: "ताज़े फूल",
-      image: "https://picsum.photos/400/400?random=5",
+      image: "https://cdn.shopify.com/s/files/1/0522/0021/0585/files/Rose.jpg?v=1743064665",
+      fallback: "https://picsum.photos/400/400?random=5",
       gradient: "from-[#C2185B] to-[#E91E63]",
       shadow: "group-hover:shadow-[0_20px_50px_-12px_rgba(233,30,99,0.5)]",
     },
     {
       title: "Coconut Water",
       hindi: "नारियल पानी",
-      image: "https://picsum.photos/400/400?random=6",
+      image: "https://media.istockphoto.com/id/637399684/photo/fresh-coconut-water-drink-on-wood.jpg?s=612x612&w=0&k=20&c=3pBOop-Y3A0maHp1ViYNF4p0Qf-UcXhx0XJXwpaMF74=",
+      fallback: "https://picsum.photos/400/400?random=6",
       gradient: "from-[#388E3C] to-[#4CAF50]",
       shadow: "group-hover:shadow-[0_20px_50px_-12px_rgba(76,175,80,0.5)]",
     },
     {
       title: "Home Repairs",
       hindi: "मरम्मत सेवा",
-      image: "https://picsum.photos/400/400?random=7",
+      image: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?w=400&h=400&fit=crop&crop=center",
+      fallback: "https://picsum.photos/400/400?random=7",
       gradient: "from-[#455A64] to-[#607D8B]",
       shadow: "group-hover:shadow-[0_20px_50px_-12px_rgba(96,125,139,0.5)]",
     },
     {
       title: "Seasonal",
       hindi: "मौसमी बहार",
-      image: "https://picsum.photos/400/400?random=8",
+      image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=400&fit=crop&crop=center",
+      fallback: "https://picsum.photos/400/400?random=8",
       gradient: "from-[#FFB300] to-[#FFC107]",
       shadow: "group-hover:shadow-[0_20px_50px_-12px_rgba(255,193,7,0.5)]",
     },
   ];
 
   const carouselItems = [...categories, ...categories];
-
-  const handleImageError = (index, imageUrl) => {
-    console.error('Image failed to load:', imageUrl);
-    setImageErrors(prev => ({ ...prev, [index]: true }));
-  };
-
-  const handleImageLoad = (imageUrl) => {
-    console.log('Image loaded successfully:', imageUrl);
-  };
 
   return (
     <section
@@ -115,25 +114,14 @@ export default function CategoriesCarousel() {
               <div className="relative h-full flex flex-col items-center justify-end p-3 md:p-4 lg:p-6 pb-4 md:pb-6 lg:pb-8 z-10">
                 <div className="absolute top-4 md:top-6 lg:top-8 left-1/2 -translate-x-1/2 w-28 h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 xl:w-48 xl:h-48 transition-all duration-500 group-hover:scale-125 group-hover:-translate-y-6 md:group-hover:-translate-y-8 lg:group-hover:-translate-y-12 drop-shadow-2xl">
                   <div className="w-full h-full rounded-xl md:rounded-2xl lg:rounded-3xl overflow-hidden border-2 md:border-3 lg:border-4 border-white/20 shadow-inner rotate-3 group-hover:rotate-0 transition-all duration-500 relative">
-                    <img
+                    <SafeImage
                       src={cat.image}
                       alt={`${cat.title} category`}
+                      name={cat.title}
+                      category={cat.title.toLowerCase().replace(' & ', '_').replace(' ', '_')}
                       className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // If image fails to load, use a reliable fallback
-                        console.log('Image failed to load:', e.target.src);
-                        e.target.src = `https://picsum.photos/400/400?random=${i + 1}`;
-                      }}
-                      onLoad={() => handleImageLoad(cat.image)}
-                      loading="lazy"
+                      fallbackText={cat.title}
                     />
-                    {/* Show a placeholder if image is still loading or failed */}
-                    <div className="absolute inset-0 bg-white/10 flex items-center justify-center opacity-0 transition-opacity duration-300" 
-                         style={{opacity: imageErrors[i] ? 1 : 0}}>
-                      <div className="text-white/60 text-lg font-bold">
-                        {cat.title}
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -155,7 +143,6 @@ export default function CategoriesCarousel() {
         @keyframes marquee {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
-        }
         .animate-marquee {
           animation: marquee 40s linear infinite;
         }

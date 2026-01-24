@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -8,6 +8,7 @@ import { AppDataProvider } from './context/AppDataContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import { ROLES } from './constants/roles';
+import { initCacheManagement } from './utils/cacheUtils';
 
 import LandingPage from './pages/LandingPage';
 import RoleSelection from './pages/RoleSelection';
@@ -30,15 +31,22 @@ import CustomerOrders from './pages/customer/CustomerOrders';
 import MapPage from './pages/customer/MapPage';
 import CustomerProfile from './pages/customer/CustomerProfile';
 import NotificationsPage from './pages/customer/NotificationsPage';
+import RoamingVendorsPage from './pages/customer/RoamingVendorsPage';
 
 import VendorLayout from './pages/vendor/VendorLayout';
 import VendorOrders from './pages/vendor/VendorOrders';
 import VendorProfile from './pages/vendor/VendorProfile';
+import RoamingManagement from './pages/vendor/RoamingManagement';
 
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminVendors from './pages/admin/AdminVendors';
 
 function App() {
+  // Initialize cache management on app start
+  useEffect(() => {
+    initCacheManagement();
+  }, []);
+
   return (
     <ErrorBoundary>
       <AuthProvider>
@@ -82,6 +90,7 @@ function App() {
               <Route path="cart" element={<CartPage />} />
               <Route path="orders" element={<CustomerOrders />} />
               <Route path="map" element={<MapPage />} />
+              <Route path="roaming-vendors" element={<RoamingVendorsPage />} />
               <Route path="profile" element={<CustomerProfile />} />
               <Route path="notifications" element={<NotificationsPage />} />
             </Route>
@@ -95,6 +104,7 @@ function App() {
               <Route index element={<VendorDashboard />} />
               <Route path="orders" element={<VendorOrders />} />
               <Route path="profile" element={<VendorProfile />} />
+              <Route path="roaming" element={<RoamingManagement />} />
             </Route>
 
             {/* Protected Admin Routes */}
@@ -122,6 +132,8 @@ function App() {
             pauseOnHover
             className="z-50"
             toastClassName="bg-white border border-gray-200 rounded-2xl shadow-lg"
+            limit={3}
+            enableMultiContainer={false}
           />
         </div>
       </AppDataProvider>

@@ -50,13 +50,16 @@ export default function Navbar({ role = "landing" }) {
     ],
     customer: [
       { name: "Dashboard", to: "/customer" },
+      { name: "Map", to: "/customer/map" },
+      { name: "Roaming Vendors", to: "/customer/roaming-vendors" },
       { name: "Orders", to: "/customer/orders" },
       { name: "Cart", to: "/customer/cart" },
     ],
     vendor: [
-      { name: "Stats", to: "/vendor" },
+      { name: "Dashboard", to: "/vendor" },
       { name: "Orders", to: "/vendor/orders" },
-      { name: "Shop Menu", to: "/vendor" },
+      { name: "Roaming", to: "/vendor/roaming" },
+      { name: "Profile", to: "/vendor/profile" },
     ],
   };
 

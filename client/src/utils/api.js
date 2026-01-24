@@ -58,10 +58,23 @@ class ApiClient {
       // Handle specific error cases
       if (response.status === 401) {
         this.clearAuth();
+        // Only show one notification for 401 errors
         if (data.message?.includes("expired")) {
-          authToasts.sessionExpired();
+          // Don't show multiple session expired messages
+          if (!this._sessionExpiredShown) {
+            this._sessionExpiredShown = true;
+            authToasts.sessionExpired();
+            // Reset flag after 5 seconds
+            setTimeout(() => { this._sessionExpiredShown = false; }, 5000);
+          }
         } else {
-          authToasts.unauthorized();
+          // Don't show multiple unauthorized messages
+          if (!this._unauthorizedShown) {
+            this._unauthorizedShown = true;
+            authToasts.unauthorized();
+            // Reset flag after 5 seconds
+            setTimeout(() => { this._unauthorizedShown = false; }, 5000);
+          }
         }
         // Redirect to login page
         window.location.href = "/";
@@ -69,7 +82,11 @@ class ApiClient {
       }
 
       if (response.status === 403) {
-        authToasts.unauthorized();
+        if (!this._forbiddenShown) {
+          this._forbiddenShown = true;
+          authToasts.unauthorized();
+          setTimeout(() => { this._forbiddenShown = false; }, 5000);
+        }
         throw new Error(data.message || "Forbidden");
       }
 
@@ -92,7 +109,11 @@ class ApiClient {
       }
 
       if (response.status >= 500) {
-        authToasts.serverError();
+        if (!this._serverErrorShown) {
+          this._serverErrorShown = true;
+          authToasts.serverError();
+          setTimeout(() => { this._serverErrorShown = false; }, 5000);
+        }
         throw new Error(data.message || "Server error");
       }
 
@@ -182,6 +203,10 @@ class ApiClient {
 
   async logout() {
     try {
+      // Prevent multiple logout calls
+      if (this._loggingOut) return;
+      this._loggingOut = true;
+      
       await this.post("/auth/logout");
     } catch (error) {
       // Continue with logout even if API call fails
@@ -190,7 +215,15 @@ class ApiClient {
       }
     } finally {
       this.clearAuth();
-      authToasts.logoutSuccess();
+      // Only show logout success if not already shown
+      if (!this._logoutShown) {
+        this._logoutShown = true;
+        authToasts.logoutSuccess();
+        setTimeout(() => { 
+          this._logoutShown = false; 
+          this._loggingOut = false;
+        }, 2000);
+      }
     }
   }
 
@@ -268,6 +301,41 @@ class ApiClient {
 
   async updateLiveLocation(latitude, longitude) {
     return this.post('/vendors/location/live', { latitude, longitude });
+  }
+
+  // Roaming vendor methods
+  async setRoamingSchedule(scheduleData) {
+    return this.post('/vendors/roaming/schedule', scheduleData);
+  }
+
+  async updateRoamingLocation(locationData) {
+    return this.post('/vendors/roaming/location', locationData);
+  }
+
+  async completeStop(stopData) {
+    return this.post('/vendors/roaming/complete-stop', stopData);
+  }
+
+  async getRoamingVendors(params = {}) {
+    const queryParams = new URLSearchParams();
+    
+    if (params.lat && params.lng) {
+      queryParams.append('lat', params.lat);
+      queryParams.append('lng', params.lng);
+    }
+    
+    if (params.radius) {
+      queryParams.append('radius', params.radius);
+    }
+
+    const queryString = queryParams.toString();
+    const url = `/public/vendors/roaming${queryString ? `?${queryString}` : ''}`;
+    
+    return this.get(url, { includeAuth: false });
+  }
+
+  async getRoamingVendorRoute(vendorId) {
+    return this.get(`/public/vendors/roaming/${vendorId}/route`, { includeAuth: false });
   }
 
   // Reverse geocoding using backend proxy to OpenStreetMap Nominatim

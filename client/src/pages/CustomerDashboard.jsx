@@ -8,6 +8,12 @@ import Navbar from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
 import api from '../utils/api';
 import InteractiveVendorMap from '../components/map/InteractiveVendorMap';
+import RoamingVendorQuickAccess from '../components/customer/RoamingVendorQuickAccess';
+import RoamingVendorsNearby from '../components/customer/RoamingVendorsNearby';
+import CustomerSubscriptionPlans from '../components/customer/CustomerSubscriptionPlans';
+import VendorRouteSimulation from '../components/map/VendorRouteSimulation';
+import ProfileCreationForm from '../components/customer/ProfileCreationForm';
+import { formatLocationForDisplay } from '../utils/locationUtils';
 
 const CustomerDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,6 +35,8 @@ const CustomerDashboard = () => {
   const [favoriteVendors, setFavoriteVendors] = useState(new Set());
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [showSubscriptionPlans, setShowSubscriptionPlans] = useState(false);
+  const [showRouteDemo, setShowRouteDemo] = useState(false);
   const navigate = useNavigate();
   
   const { 
@@ -55,11 +63,6 @@ const CustomerDashboard = () => {
   ];
 
   const getLocationText = () => {
-    // Check for rate limiting first
-    if (locationDetails?.rateLimited) {
-      return "Service temporarily unavailable";
-    }
-
     // Check for loading state
     if (loadingLocation) {
       return "Detecting location...";
@@ -70,57 +73,17 @@ const CustomerDashboard = () => {
       return "Location unavailable";
     }
 
-    // Show detailed location names first (exact location names)
-    const parts = [];
-
-    // Add area/place (suburb, neighbourhood, area) - most specific
-    if (locationDetails?.place && 
-        locationDetails.place !== "Unknown Area" && 
-        locationDetails.place !== "Service temporarily unavailable" &&
-        !locationDetails.place.includes("Unknown")) {
-      parts.push(locationDetails.place);
+    // Use the new location formatting utility
+    if (locationDetails) {
+      return formatLocationForDisplay(locationDetails, 'medium');
     }
 
-    // Add district/city
-    if (locationDetails?.district && 
-        locationDetails.district !== "Unknown District" && 
-        locationDetails.district !== "Please try again later" &&
-        !locationDetails.district.includes("Unknown")) {
-      parts.push(locationDetails.district);
+    // Fallback if no location details
+    if (userLocation) {
+      return `${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`;
     }
 
-    // Add state
-    if (locationDetails?.state && 
-        locationDetails.state !== "Unknown State" && 
-        locationDetails.state !== "Rate limit exceeded" &&
-        !locationDetails.state.includes("Unknown")) {
-      parts.push(locationDetails.state);
-    }
-
-    if (parts.length > 0) {
-      return parts.join(", ");
-    }
-
-    // Fallback to your existing location logic
-    if (userLocation?.displayName) {
-      return userLocation.displayName;
-    }
-    if (userLocation?.fullAddress) {
-      return userLocation.fullAddress;
-    }
-    if (userLocation?.shortAddress) {
-      return userLocation.shortAddress;
-    }
-    if (userLocation?.address) {
-      return userLocation.address;
-    }
-    if (userLocation?.lat && userLocation?.lng) {
-      const lat = userLocation.lat.toFixed(6);
-      const lng = userLocation.lng.toFixed(6);
-      return `${lat}, ${lng}`;
-    }
-    
-    return "Detecting location...";
+    return "Location not available";
   };
 
   useEffect(() => {
@@ -478,7 +441,46 @@ const CustomerDashboard = () => {
 
       {/* Premium Quick Actions Section */}
       <div className="max-w-7xl mx-auto px-6 pb-10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Roaming Vendor Quick Access */}
+        <RoamingVendorQuickAccess />
+        
+        {/* Customer Subscription Section */}
+        <div className="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-[32px] p-8 mb-8 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-2xl font-black uppercase tracking-tight mb-2">
+                Upgrade to Vendorify Plus
+              </h3>
+              <p className="text-white/80 mb-4">
+                Get free delivery, exclusive deals, and priority support for just ₹99/month
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="bg-white/20 px-4 py-2 rounded-2xl">
+                  <span className="text-sm font-bold">Current: Free Plan</span>
+                </div>
+                <div className="bg-green-500 px-4 py-2 rounded-2xl">
+                  <span className="text-sm font-bold">Save ₹500+ Monthly</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSubscriptionPlans(true)}
+                className="bg-[#CDF546] text-gray-900 px-6 py-3 rounded-2xl font-bold hover:bg-[#b8e635] transition-all"
+              >
+                Upgrade Now
+              </button>
+              <button
+                onClick={() => setShowRouteDemo(true)}
+                className="bg-white/20 text-white px-6 py-3 rounded-2xl font-bold hover:bg-white/30 transition-all"
+              >
+                Route Demo
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <motion.div
             whileHover={{ y: -5 }}
             className="bg-gradient-to-br from-[#1A6950] to-emerald-700 rounded-[32px] p-6 text-white cursor-pointer shadow-xl hover:shadow-2xl transition-all"
@@ -537,6 +539,29 @@ const CustomerDashboard = () => {
 
           <motion.div
             whileHover={{ y: -5 }}
+            className="bg-gradient-to-br from-orange-500 to-red-600 rounded-[32px] p-6 text-white cursor-pointer shadow-xl hover:shadow-2xl transition-all"
+            onClick={() => {
+              // Navigate to roaming vendors page
+              navigate('/customer/roaming-vendors');
+            }}
+          >
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                <Navigation size={24} />
+              </div>
+              <div>
+                <h3 className="font-black uppercase tracking-tight">Roaming</h3>
+                <p className="text-white/70 text-sm">Mobile vendors</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-widest">Track</span>
+              <ArrowRight size={16} />
+            </div>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ y: -5 }}
             className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-[32px] p-6 text-white cursor-pointer shadow-xl hover:shadow-2xl transition-all"
             onClick={() => {
               // Navigate to orders page to view order history
@@ -555,34 +580,6 @@ const CustomerDashboard = () => {
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-widest">View All</span>
               <ArrowRight size={16} />
-            </div>
-          </motion.div>
-
-          <motion.div
-            whileHover={{ y: -5 }}
-            className="bg-gradient-to-br from-[#1A6950] to-emerald-700  rounded-[32px] p-6 text-white cursor-pointer shadow-xl hover:shadow-2xl transition-all"
-            onClick={() => {
-              // Navigate to dedicated notifications page
-              navigate('/customer/notifications');
-            }}
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center relative">
-                <Bell size={24} />
-                {(notifications || []).filter(n => n.unread).length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-red-500 text-xs font-bold rounded-full flex items-center justify-center">
-                    {(notifications || []).filter(n => n.unread).length}
-                  </span>
-                )}
-              </div>
-              <div>
-                <h3 className="font-black uppercase tracking-tight text-white">Updates</h3>
-                <p className="text-white/80 text-sm">{(notifications || []).filter(n => n.unread).length} new alerts</p>
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-widest text-white">Check</span>
-              <ArrowRight size={16} className="text-white" />
             </div>
           </motion.div>
         </div>
@@ -738,6 +735,11 @@ const CustomerDashboard = () => {
         </motion.div>
       </section>
 
+      {/* Roaming Vendors Nearby Section */}
+      <div className="max-w-7xl mx-auto px-6 pb-10">
+        <RoamingVendorsNearby />
+      </div>
+
       {/* Premium Deals Section */}
       {(deals || []).length > 0 && (
         <div className="max-w-7xl mx-auto px-6 pb-10">
@@ -798,100 +800,6 @@ const CustomerDashboard = () => {
         </div>
       )}
 
-      {/* Premium Roaming Vendors */}
-      {(roamingVendors || []).length > 0 && (
-        <div className="max-w-7xl mx-auto px-6 pb-10">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center">
-              <Navigation size={24} className="text-white" />
-            </div>
-            <div>
-              <h2 className="text-3xl font-heading font-black text-gray-900 uppercase tracking-tight">Roaming Near You</h2>
-              <p className="text-gray-600">Mobile vendors currently in your area</p>
-            </div>
-            <span className="bg-green-500 text-white px-4 py-2 rounded-2xl text-xs font-black uppercase animate-pulse shadow-lg">Live Tracking</span>
-          </div>
-          
-          <div className="flex gap-6 overflow-x-auto pb-6 -mx-6 px-6 scrollbar-hide">
-            {roamingVendors.map((vendor) => (
-              <motion.div
-                key={vendor._id}
-                whileHover={{ y: -8, scale: 1.02 }}
-                onClick={() => navigate(`/customer/vendor/${vendor._id}`)}
-                className="flex-shrink-0 w-80 bg-white rounded-[32px] p-6 border-2 border-gray-100 shadow-lg hover:shadow-2xl cursor-pointer transition-all hover:border-blue-300 relative overflow-hidden"
-              >
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full -translate-y-12 translate-x-12 opacity-50"></div>
-                
-                <div className="relative z-10">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="relative">
-                      <img 
-                        src={vendor.image || 'https://via.placeholder.com/100'} 
-                        alt={vendor.shopName} 
-                        className="w-16 h-16 rounded-2xl object-cover shadow-lg" 
-                      />
-                      {vendor.isOnline && (
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white rounded-full animate-pulse"></div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-black text-gray-900 uppercase text-lg leading-tight">{vendor.shopName}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex items-center gap-1">
-                          <Star size={14} className="text-yellow-400 fill-yellow-400" />
-                          <span className="text-sm font-bold text-gray-600">{vendor.rating || 0}</span>
-                        </div>
-                        <span className="text-gray-300">•</span>
-                        <span className="text-sm font-bold text-blue-600 uppercase tracking-wide">{vendor.category}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 mb-4 border border-blue-100">
-                    <div className="flex items-center gap-2 mb-2">
-                      <MapPin size={16} className="text-blue-600" />
-                      <span className="text-xs font-black text-blue-600 uppercase tracking-widest">Current Location</span>
-                    </div>
-                    <p className="font-bold text-gray-900 text-sm mb-2">{vendor.schedule?.currentStop || 'Location updating...'}</p>
-                    
-                    {vendor.schedule?.nextStops?.[0] && (
-                      <div className="pt-2 border-t border-blue-200">
-                        <p className="text-xs text-gray-600 mb-1">
-                          <span className="font-bold">Next:</span> {vendor.schedule.nextStops[0].location}
-                        </p>
-                        <p className="text-xs text-blue-600 font-bold">
-                          @ {vendor.schedule.nextStops[0].time}
-                        </p>
-                      </div>
-                    )}
-                    
-                    {vendor.distance && (
-                      <div className="mt-3 flex items-center justify-between">
-                        <span className="text-xs font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full">
-                          {vendor.distance}km away
-                        </span>
-                        <button className="text-xs font-bold text-gray-600 hover:text-blue-600 transition-colors">
-                          Get Directions →
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button className="flex-1 bg-blue-500 text-white px-4 py-3 rounded-2xl font-bold text-sm hover:bg-blue-600 transition-colors shadow-lg">
-                      View Menu
-                    </button>
-                    <button className="bg-gray-100 text-gray-700 px-4 py-3 rounded-2xl font-bold text-sm hover:bg-gray-200 transition-colors">
-                      Track Live
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Premium Handpicked Vendors Section */}
       <div className="max-w-7xl mx-auto px-6 pb-20" data-vendors-section>
         <div className="flex items-baseline justify-between mb-12">
@@ -913,6 +821,10 @@ const CustomerDashboard = () => {
                 ← Clear search
               </button>
             )}
+            {/* Debug Info */}
+            <div className="mt-2 text-xs text-gray-500">
+              Debug: {(vendors || []).length} total vendors, {(displayVendors || []).length} displayed, loading: {loading ? 'yes' : 'no'}
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <button 
@@ -953,22 +865,16 @@ const CustomerDashboard = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-[48px] p-16 md:p-24 text-center shadow-xl border border-gray-200 relative overflow-hidden"
+            className="bg-white rounded-[32px] p-16 md:p-24 text-center shadow-xl border-2 border-gray-300 relative overflow-hidden"
           >
-            <div className="absolute inset-0 opacity-5">
-              <div className="absolute top-0 left-0 w-full h-full" style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-              }}></div>
-            </div>
-            
             <div className="relative z-10">
-              <div className="w-32 h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center mx-auto mb-8">
-                <Store size={48} className="text-gray-400" />
+              <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Store size={36} className="text-gray-400" />
               </div>
-              <h3 className="text-3xl font-heading font-black text-gray-900 uppercase mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">
                 {loading ? 'Loading Vendors...' : 'No Vendors Found'}
               </h3>
-              <p className="text-gray-600 mb-10 max-w-lg mx-auto text-lg leading-relaxed">
+              <p className="text-gray-600 mb-8 max-w-lg mx-auto">
                 {loading 
                   ? 'Please wait while we fetch the best vendors near you.'
                   : searchQuery 
@@ -979,13 +885,13 @@ const CustomerDashboard = () => {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <button
                     onClick={() => { setSearchQuery(''); setSearchResults(null); }}
-                    className="bg-[#CDF546] text-gray-900 px-8 py-4 rounded-2xl font-bold uppercase tracking-widest text-sm shadow-lg hover:bg-[#b8e635] transition-all"
+                    className="bg-[#CDF546] text-gray-900 px-6 py-3 rounded-xl font-bold text-sm shadow-md hover:bg-[#b8e635] transition-all"
                   >
                     Clear Filters
                   </button>
                   <button
                     onClick={addTestVendors}
-                    className="bg-[#1A6950] text-white px-8 py-4 rounded-2xl font-bold uppercase tracking-widest text-sm shadow-lg hover:bg-emerald-700 transition-all"
+                    className="bg-[#1A6950] text-white px-6 py-3 rounded-xl font-bold text-sm shadow-md hover:bg-[#01583F] transition-all"
                   >
                     Add Sample Data
                   </button>
@@ -995,6 +901,34 @@ const CustomerDashboard = () => {
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {/* Debug: Show sample card if no vendors */}
+            {(displayVendors || []).length === 0 && !loading && (
+              <div className="bg-white rounded-[24px] overflow-hidden shadow-lg border-2 border-gray-300">
+                <div className="h-48 bg-gradient-to-br from-[#1A6950] to-[#01583F] flex items-center justify-center">
+                  <div className="text-center text-white">
+                    <Store size={48} className="mx-auto mb-2" />
+                    <p className="font-bold">Sample Vendor</p>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Test Vendor</h3>
+                  <p className="text-sm font-medium text-[#1A6950] mb-2">FOOD & BEVERAGES</p>
+                  <p className="text-gray-600 text-sm mb-3">This is a sample vendor card to test visibility</p>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex items-center gap-1">
+                      <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                      <span className="text-gray-900 font-bold text-sm">4.5</span>
+                    </div>
+                    <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                    <span className="text-gray-600 font-medium text-sm">100+ orders</span>
+                  </div>
+                  <button className="w-full bg-[#1A6950] text-white py-2.5 px-4 rounded-xl font-bold text-sm">
+                    View Menu
+                  </button>
+                </div>
+              </div>
+            )}
+            
             <AnimatePresence mode="popLayout">
               {displayVendors.map((vendor, idx) => (
                 <motion.div
@@ -1005,84 +939,97 @@ const CustomerDashboard = () => {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.5, delay: idx * 0.05 }}
                   onClick={() => navigate(`/customer/vendor/${vendor._id}`)}
-                  className="group relative bg-gradient-to-b from-gray-900 to-gray-800 rounded-[32px] overflow-hidden cursor-pointer shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] border border-gray-700"
+                  className="group relative bg-white rounded-[24px] overflow-hidden cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-2 border-gray-300 hover:border-[#1A6950]"
                 >
                   {/* Vendor Image */}
-                  <div className="relative h-80 overflow-hidden">
+                  <div className="relative h-48 overflow-hidden bg-gray-100">
                     <img
-                      src={vendor.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(vendor.shopName)}&background=random&size=400`}
+                      src={vendor.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(vendor.shopName)}&background=1A6950&color=ffffff&size=400`}
                       alt={vendor.shopName}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                     
                     {/* Status Badges */}
-                    <div className="absolute top-4 right-4 flex flex-col gap-2">
+                    <div className="absolute top-3 right-3 flex flex-col gap-2">
                       {vendor.isOnline && (
-                        <div className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
+                        <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-md">
                           <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
                           Online
                         </div>
                       )}
                       {vendor.isVerified && (
-                        <div className="bg-blue-500 text-white p-2 rounded-full">
-                          <ShieldCheck size={16} />
+                        <div className="bg-blue-500 text-white p-1.5 rounded-full shadow-md">
+                          <ShieldCheck size={14} />
                         </div>
                       )}
                     </div>
 
                     {/* Distance Badge */}
                     {vendor.distance && (
-                      <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-md text-white px-3 py-1 rounded-full text-xs font-bold">
+                      <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-bold shadow-md">
                         {vendor.distance}km away
                       </div>
                     )}
 
                     {/* Favorite Button */}
                     <button
-                      className={`absolute top-4 left-1/2 transform -translate-x-1/2 w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center transition-all hover:scale-110 ${
+                      className={`absolute bottom-3 right-3 w-8 h-8 rounded-full backdrop-blur-sm flex items-center justify-center transition-all hover:scale-110 shadow-md ${
                         favoriteVendors.has(vendor._id)
                           ? 'bg-red-500 text-white'
-                          : 'bg-white/10 text-white hover:bg-red-500'
+                          : 'bg-white/80 text-gray-700 hover:bg-red-500 hover:text-white'
                       }`}
                       onClick={(e) => toggleFavorite(vendor._id, e)}
                     >
                       <Heart 
-                        size={20} 
+                        size={16} 
                         className={favoriteVendors.has(vendor._id) ? 'fill-current' : ''} 
                       />
                     </button>
                   </div>
 
                   {/* Vendor Info */}
-                  <div className="p-6 text-white">
-                    {/* Vendor Name & Verification */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <h3 className="text-xl font-bold text-white truncate flex-1">
-                        {vendor.shopName}
-                      </h3>
+                  <div className="p-4 bg-white">
+                    {/* Vendor Name & Category */}
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-gray-900 truncate mb-1">
+                          {vendor.shopName}
+                        </h3>
+                        <p className="text-sm font-medium text-[#1A6950] uppercase tracking-wide">
+                          {vendor.category || 'Food & Beverages'}
+                        </p>
+                      </div>
                       {vendor.isVerified && (
-                        <div className="bg-blue-500 text-white p-1 rounded-full flex-shrink-0">
-                          <ShieldCheck size={16} />
+                        <div className="bg-blue-100 text-blue-600 p-1 rounded-full ml-2">
+                          <ShieldCheck size={14} />
                         </div>
                       )}
                     </div>
 
                     {/* Description */}
-                    <p className="text-gray-300 text-sm mb-4 line-clamp-2">
-                      {vendor.description || `Specializing in ${vendor.category} with authentic flavors and quality ingredients.`}
+                    <p className="text-gray-600 text-sm mb-3 line-clamp-2 leading-relaxed">
+                      {vendor.description || `Specializing in ${vendor.category || 'delicious food'} with authentic flavors and quality ingredients.`}
                     </p>
 
-                    {/* Stats */}
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="flex items-center gap-1">
-                        <Star size={16} className="text-yellow-400 fill-yellow-400" />
-                        <span className="text-white font-bold">{vendor.rating || '4.5'}</span>
+                    {/* Stats Row */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                          <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                          <span className="text-gray-900 font-bold text-sm">{vendor.rating || '4.5'}</span>
+                        </div>
+                        <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
+                        <div className="flex items-center gap-1">
+                          <Package size={14} className="text-gray-500" />
+                          <span className="text-gray-600 font-medium text-sm">{vendor.totalOrders || Math.floor(Math.random() * 500) + 50}+</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Package size={16} className="text-gray-400" />
-                        <span className="text-gray-300 font-bold">{vendor.totalOrders || Math.floor(Math.random() * 500) + 50}</span>
-                      </div>
+                      {vendor.distance && (
+                        <span className="text-xs font-bold text-[#1A6950] bg-[#CDF546] px-2 py-1 rounded-full">
+                          {vendor.distance}km
+                        </span>
+                      )}
                     </div>
 
                     {/* Action Button */}
@@ -1091,7 +1038,7 @@ const CustomerDashboard = () => {
                         e.stopPropagation();
                         navigate(`/customer/vendor/${vendor._id}`);
                       }}
-                      className="w-full bg-white text-gray-900 py-3 px-6 rounded-2xl font-bold text-sm hover:bg-gray-100 transition-all duration-300 flex items-center justify-center gap-2 group-hover:scale-105"
+                      className="w-full bg-[#1A6950] text-white py-2.5 px-4 rounded-xl font-bold text-sm hover:bg-[#01583F] transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
                     >
                       <Store size={16} />
                       View Menu
@@ -1099,7 +1046,7 @@ const CustomerDashboard = () => {
                   </div>
 
                   {/* Hover Effect Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1A6950]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1A6950]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-[24px]" />
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -1266,174 +1213,21 @@ const CustomerDashboard = () => {
         )}
       </AnimatePresence>
 
+      {/* Customer Subscription Plans Modal */}
+      <CustomerSubscriptionPlans
+        isOpen={showSubscriptionPlans}
+        onClose={() => setShowSubscriptionPlans(false)}
+        currentPlan="free"
+      />
+
+      {/* Route Demo Modal */}
+      <VendorRouteSimulation
+        isOpen={showRouteDemo}
+        onClose={() => setShowRouteDemo(false)}
+      />
+
       <Footer />
     </div>
-  );
-};
-
-// Profile Creation Form Component
-const ProfileCreationForm = ({ onSave, onCancel }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    preferences: {
-      cuisine: [],
-      dietaryRestrictions: [],
-      priceRange: 'medium'
-    }
-  });
-
-  const cuisineOptions = ['Indian', 'Chinese', 'Italian', 'Mexican', 'Thai', 'American', 'Mediterranean'];
-  const dietaryOptions = ['Vegetarian', 'Vegan', 'Gluten-Free', 'Halal', 'Jain', 'No Onion/Garlic'];
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handlePreferenceChange = (type, value) => {
-    setFormData(prev => ({
-      ...prev,
-      preferences: {
-        ...prev.preferences,
-        [type]: prev.preferences[type].includes(value)
-          ? prev.preferences[type].filter(item => item !== value)
-          : [...prev.preferences[type], value]
-      }
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (formData.name && formData.email) {
-      onSave(formData);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">Name *</label>
-          <input
-            type="text"
-            value={formData.name}
-            onChange={(e) => handleInputChange('name', e.target.value)}
-            className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-[#1A6950] focus:ring-0 outline-none"
-            placeholder="Enter your full name"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">Email *</label>
-          <input
-            type="email"
-            value={formData.email}
-            onChange={(e) => handleInputChange('email', e.target.value)}
-            className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-[#1A6950] focus:ring-0 outline-none"
-            placeholder="Enter your email"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2">Phone</label>
-          <input
-            type="tel"
-            value={formData.phone}
-            onChange={(e) => handleInputChange('phone', e.target.value)}
-            className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-[#1A6950] focus:ring-0 outline-none"
-            placeholder="Enter your phone number"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-3">Favorite Cuisines</label>
-          <div className="flex flex-wrap gap-2">
-            {cuisineOptions.map(cuisine => (
-              <button
-                key={cuisine}
-                type="button"
-                onClick={() => handlePreferenceChange('cuisine', cuisine)}
-                className={`px-3 py-2 rounded-full text-xs font-bold transition-all ${
-                  formData.preferences.cuisine.includes(cuisine)
-                    ? 'bg-[#1A6950] text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {cuisine}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-3">Dietary Preferences</label>
-          <div className="flex flex-wrap gap-2">
-            {dietaryOptions.map(option => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => handlePreferenceChange('dietaryRestrictions', option)}
-                className={`px-3 py-2 rounded-full text-xs font-bold transition-all ${
-                  formData.preferences.dietaryRestrictions.includes(option)
-                    ? 'bg-[#CDF546] text-gray-900'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-bold text-gray-700 mb-3">Price Range</label>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { value: 'budget', label: '₹ Budget', desc: 'Under ₹200' },
-              { value: 'medium', label: '₹₹ Medium', desc: '₹200-500' },
-              { value: 'premium', label: '₹₹₹ Premium', desc: 'Above ₹500' }
-            ].map(option => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleInputChange('preferences', { ...formData.preferences, priceRange: option.value })}
-                className={`p-3 rounded-2xl text-center transition-all ${
-                  formData.preferences.priceRange === option.value
-                    ? 'bg-[#1A6950] text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                <div className="font-bold text-sm">{option.label}</div>
-                <div className="text-xs opacity-70">{option.desc}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex gap-3 pt-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 px-6 py-3 rounded-2xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-all"
-        >
-          Skip for Now
-        </button>
-        <button
-          type="submit"
-          disabled={!formData.name || !formData.email}
-          className="flex-1 px-6 py-3 rounded-2xl bg-[#1A6950] text-white font-bold hover:bg-emerald-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Save Profile
-        </button>
-      </div>
-    </form>
   );
 };
 

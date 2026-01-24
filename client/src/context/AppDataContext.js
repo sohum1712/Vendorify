@@ -11,6 +11,7 @@ import { io } from "socket.io-client";
 import { useGeolocation } from "../hooks/useGeolocation";
 import api from "../utils/api";
 import { CONFIG } from "../constants/config";
+import { coordinatesToAddress, formatLocationForDisplay } from "../utils/locationUtils";
 
 const AppDataContext = createContext(null);
 
@@ -95,6 +96,80 @@ export const AppDataProvider = ({ children }) => {
       );
     });
 
+    // Roaming vendor events
+    socketRef.current.on("roaming_vendor_moved", (data) => {
+      setVendorLocations((prev) => {
+        const map = new Map(prev);
+        map.set(data.vendorId, {
+          lat: data.lat,
+          lng: data.lng,
+          currentStop: data.currentStop,
+          isMoving: data.isMoving,
+          speed: data.speed,
+          heading: data.heading,
+        });
+        return map;
+      });
+
+      setVendors((prev) =>
+        prev.map((v) =>
+          v._id === data.vendorId
+            ? {
+                ...v,
+                location: {
+                  type: "Point",
+                  coordinates: [data.lng, data.lat],
+                },
+                schedule: { 
+                  ...v.schedule, 
+                  currentStop: data.currentStop,
+                  isMoving: data.isMoving,
+                  speed: data.speed,
+                  heading: data.heading,
+                  lastUpdated: data.timestamp
+                },
+              }
+            : v,
+        ),
+      );
+    });
+
+    socketRef.current.on("vendor_roaming_schedule_updated", (data) => {
+      setVendors((prev) =>
+        prev.map((v) =>
+          v._id === data.vendorId
+            ? {
+                ...v,
+                schedule: {
+                  ...v.schedule,
+                  isRoaming: data.isRoaming,
+                  routeName: data.routeName,
+                  currentStop: data.currentStop,
+                  nextStops: data.nextStops,
+                },
+              }
+            : v,
+        ),
+      );
+    });
+
+    socketRef.current.on("vendor_stop_completed", (data) => {
+      setVendors((prev) =>
+        prev.map((v) =>
+          v._id === data.vendorId
+            ? {
+                ...v,
+                schedule: {
+                  ...v.schedule,
+                  currentStop: data.currentStop,
+                  nextStops: data.nextStops,
+                },
+              }
+            : v,
+        ),
+      );
+    });
+
     socketRef.current.on("all_vendor_locations", (locations) => {
       const map = new Map();
       locations.forEach((loc) => {
@@ -148,9 +223,9 @@ export const AppDataProvider = ({ children }) => {
     const fetchLocationDetails = async () => {
       setLoadingLocation(true);
       try {
-        const details = await api.reverseGeocode(
+        const details = await coordinatesToAddress(
           userLocation.lat,
-          userLocation.lng,
+          userLocation.lng
         );
         setLocationDetails(details);
       } catch (err) {

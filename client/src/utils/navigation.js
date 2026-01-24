@@ -68,9 +68,13 @@ export const navigateToDashboard = (navigate, user, options = {}) => {
   };
   
   if (process.env.NODE_ENV === 'development') {
-    console.log(`Navigating user ${user.name} (${user.role}) to ${dashboardPath}`);
+    console.log(`Navigating user ${user.name || user.email} (${user.role}) to ${dashboardPath}`);
   }
-  navigate(dashboardPath, navigationOptions);
+  
+  // Use setTimeout to ensure navigation happens after current execution
+  setTimeout(() => {
+    navigate(dashboardPath, navigationOptions);
+  }, 100);
 };
 
 /**

@@ -764,3 +764,340 @@ exports.processVoiceCommand = async (req, res) => {
         });
     }
 };
+
+// --- Roaming Vendor Controllers ---
+
+exports.setRoamingSchedule = async (req, res) => {
+    try {
+        const { isRoaming, routeName, stops, operatingHours } = req.body;
+
+        if (isRoaming && (!stops || stops.length === 0)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Stops are required for roaming vendors'
+            });
+        }
+
+        const vendor = await Vendor.findOne({ userId: req.user.id });
+        if (!vendor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+
+        // Process stops with estimated arrival times
+        const processedStops = stops ? stops.map((stop, index) => ({
+            location: stop.location,
+            time: stop.time,
+            coordinates: {
+                type: 'Point',
+                coordinates: stop.coordinates || [0, 0]
+            },
+            estimatedArrival: new Date(stop.time),
+            stopDuration: stop.duration || 30,
+            isCompleted: false
+        })) : [];
+
+        const updateData = {
+            'schedule.isRoaming': isRoaming,
+            'schedule.routeName': routeName || '',
+            'schedule.nextStops': processedStops,
+            'schedule.operatingHours': operatingHours || vendor.schedule.operatingHours,
+            'schedule.lastUpdated': new Date()
+        };
+
+        // If starting roaming, set first stop as current
+        if (isRoaming && processedStops.length > 0) {
+            updateData['schedule.currentStop'] = processedStops[0].location;
+            updateData['schedule.estimatedArrival'] = processedStops[0].estimatedArrival;
+        }
+
+        const updatedVendor = await Vendor.findOneAndUpdate(
+            { userId: req.user.id },
+            updateData,
+            { new: true }
+        );
+
+        // Emit socket event for real-time updates
+        if (req.io) {
+            req.io.emit('vendor_roaming_schedule_updated', {
+                vendorId: updatedVendor._id,
+                isRoaming: updatedVendor.schedule.isRoaming,
+                routeName: updatedVendor.schedule.routeName,
+                currentStop: updatedVendor.schedule.currentStop,
+                nextStops: updatedVendor.schedule.nextStops
+            });
+        }
+
+        res.json({
+            success: true,
+            message: isRoaming ? 'Roaming schedule set successfully' : 'Roaming disabled',
+            schedule: updatedVendor.schedule
+        });
+
+    } catch (err) {
+        Logger.error('Set roaming schedule error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to set roaming schedule',
+            error: err.message
+        });
+    }
+};
+
+exports.updateRoamingLocation = async (req, res) => {
+    try {
+        const { latitude, longitude, currentStop, isMoving, speed, heading } = req.body;
+
+        if (!latitude || !longitude) {
+            return res.status(400).json({
+                success: false,
+                message: 'Latitude and longitude are required'
+            });
+        }
+
+        const vendor = await Vendor.findOne({ userId: req.user.id });
+        if (!vendor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+
+        if (!vendor.schedule.isRoaming) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vendor is not set as roaming'
+            });
+        }
+
+        // Reverse geocoding for address
+        let address = `${latitude}, ${longitude}`;
+        try {
+            const response = await fetch(
+                `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+            );
+            
+            if (response.ok) {
+                const data = await response.json();
+                address = data.display_name || data.locality || address;
+            }
+        } catch (geocodeError) {
+            Logger.info('Reverse geocoding failed for roaming vendor');
+        }
+
+        const updateData = {
+            address,
+            location: {
+                type: 'Point',
+                coordinates: [longitude, latitude]
+            },
+            lastLocationUpdate: new Date(),
+            'schedule.isMoving': isMoving || false,
+            'schedule.speed': speed || 0,
+            'schedule.heading': heading || 0,
+            'schedule.lastUpdated': new Date()
+        };
+
+        if (currentStop) {
+            updateData['schedule.currentStop'] = currentStop;
+        }
+
+        const updatedVendor = await Vendor.findOneAndUpdate(
+            { userId: req.user.id },
+            updateData,
+            { new: true }
+        );
+
+        // Emit socket event for real-time tracking
+        if (req.io) {
+            req.io.emit('roaming_vendor_moved', {
+                vendorId: updatedVendor._id,
+                lat: latitude,
+                lng: longitude,
+                currentStop: updatedVendor.schedule.currentStop,
+                isMoving: updatedVendor.schedule.isMoving,
+                speed: updatedVendor.schedule.speed,
+                heading: updatedVendor.schedule.heading,
+                timestamp: new Date()
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Roaming location updated successfully',
+            location: {
+                address: updatedVendor.address,
+                coordinates: updatedVendor.location.coordinates,
+                currentStop: updatedVendor.schedule.currentStop,
+                isMoving: updatedVendor.schedule.isMoving,
+                speed: updatedVendor.schedule.speed
+            }
+        });
+
+    } catch (err) {
+        Logger.error('Update roaming location error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update roaming location',
+            error: err.message
+        });
+    }
+};
+
+exports.completeStop = async (req, res) => {
+    try {
+        const { stopLocation } = req.body;
+
+        const vendor = await Vendor.findOne({ userId: req.user.id });
+        if (!vendor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+
+        if (!vendor.schedule.isRoaming) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vendor is not roaming'
+            });
+        }
+
+        // Mark current stop as completed and move to next
+        const nextStops = vendor.schedule.nextStops.map(stop => {
+            if (stop.location === stopLocation) {
+                return { ...stop, isCompleted: true, actualArrival: new Date() };
+            }
+            return stop;
+        });
+
+        // Find next incomplete stop
+        const nextStop = nextStops.find(stop => !stop.isCompleted);
+        const currentStop = nextStop ? nextStop.location : 'Route completed';
+
+        const updatedVendor = await Vendor.findOneAndUpdate(
+            { userId: req.user.id },
+            {
+                'schedule.nextStops': nextStops,
+                'schedule.currentStop': currentStop,
+                'schedule.estimatedArrival': nextStop ? nextStop.estimatedArrival : null,
+                'schedule.lastUpdated': new Date()
+            },
+            { new: true }
+        );
+
+        // Emit socket event
+        if (req.io) {
+            req.io.emit('vendor_stop_completed', {
+                vendorId: updatedVendor._id,
+                completedStop: stopLocation,
+                currentStop: currentStop,
+                nextStops: updatedVendor.schedule.nextStops
+            });
+        }
+
+        res.json({
+            success: true,
+            message: `Stop at ${stopLocation} completed`,
+            currentStop: currentStop,
+            nextStops: updatedVendor.schedule.nextStops
+        });
+
+    } catch (err) {
+        Logger.error('Complete stop error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to complete stop',
+            error: err.message
+        });
+    }
+};
+
+exports.getRoamingVendors = async (req, res) => {
+    try {
+        const { lat, lng, radius = 5000 } = req.query;
+
+        let query = {
+            'schedule.isRoaming': true,
+            isOnline: true
+        };
+
+        // Add geospatial query if coordinates provided
+        if (lat && lng) {
+            query.location = {
+                $near: {
+                    $geometry: {
+                        type: 'Point',
+                        coordinates: [parseFloat(lng), parseFloat(lat)]
+                    },
+                    $maxDistance: parseInt(radius)
+                }
+            };
+        }
+
+        const roamingVendors = await Vendor.find(query)
+            .select('-userId')
+            .limit(50);
+
+        // Calculate distance and ETA for each vendor
+        const vendorsWithDetails = roamingVendors.map(vendor => {
+            const vendorObj = vendor.toObject();
+            
+            if (lat && lng && vendor.location.coordinates) {
+                const distance = calculateDistance(
+                    parseFloat(lat),
+                    parseFloat(lng),
+                    vendor.location.coordinates[1],
+                    vendor.location.coordinates[0]
+                );
+                vendorObj.distance = Math.round(distance * 10) / 10;
+            }
+
+            // Calculate ETA to current stop
+            if (vendor.schedule.estimatedArrival) {
+                const now = new Date();
+                const eta = vendor.schedule.estimatedArrival;
+                vendorObj.etaMinutes = Math.max(0, Math.round((eta - now) / (1000 * 60)));
+            }
+
+            return vendorObj;
+        });
+
+        res.json({
+            success: true,
+            vendors: vendorsWithDetails,
+            count: vendorsWithDetails.length
+        });
+
+    } catch (err) {
+        Logger.error('Get roaming vendors error:', err);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get roaming vendors',
+            error: err.message
+        });
+    }
+};
+
+// Helper function for distance calculation
+function calculateDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = toRadians(lat2 - lat1);
+    const dLng = toRadians(lng2 - lng1);
+    
+    const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+    
+    return distance;
+}
+
+function toRadians(degrees) {
+    return degrees * (Math.PI / 180);
+}
