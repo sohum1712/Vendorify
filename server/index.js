@@ -100,6 +100,7 @@ connectDB();
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/public/vendors', publicRoutes);
+app.use('/api/customers', require('./routes/customerRoutes')); // Customer routes
 app.use('/api/test', require('./routes/testRoutes')); // Test routes
 app.use('/api/orders', orderRoutes);
 

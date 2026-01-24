@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User,
@@ -15,22 +15,38 @@ import {
 } from 'lucide-react';
 import Navbar from '../../components/common/Navbar';
 import { Footer } from '../../components/common/Footer';
+import { useAppData } from '../../context/AppDataContext';
+import { useAuth } from '../../context/AuthContext';
 
 const CustomerProfile = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { customerProfile, fetchOrCreateCustomerProfile, orders, locationDetails, userLocation } = useAppData();
 
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Fetch customer profile on mount
+  useEffect(() => {
+    fetchOrCreateCustomerProfile();
+  }, [fetchOrCreateCustomerProfile]);
+
+  // Create customer details from available data
   const customerDetails = {
-    name: 'Priya Sharma',
-    email: 'priya.sharma@email.com',
-    phone: '+91 98765 43210',
-    location: 'MG Road, Bengaluru',
-    memberSince: 'January 2024',
+    name: customerProfile?.name || user?.name || 'Customer',
+    email: customerProfile?.email || user?.email || 'Not provided',
+    phone: customerProfile?.phone || user?.mobile || 'Not provided',
+    location: customerProfile?.address || 
+              (locationDetails ? `${locationDetails.place}, ${locationDetails.district}` : 
+               userLocation?.displayName || 'Location not set'),
+    memberSince: customerProfile?.createdAt ? 
+                 new Date(customerProfile.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) :
+                 user?.createdAt ? 
+                 new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) :
+                 'Recently',
     stats: {
-      totalOrders: 47,
-      totalSpent: 3850,
-      favoriteVendors: 8,
+      totalOrders: (orders || []).length,
+      totalSpent: (orders || []).reduce((sum, order) => sum + (order.total || 0), 0),
+      favoriteVendors: JSON.parse(localStorage.getItem('favoriteVendors') || '[]').length,
     }
   };
 

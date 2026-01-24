@@ -42,7 +42,10 @@ const CustomerDashboard = () => {
     searchVendors, 
     fetchRoamingVendors, 
     refetchLocation,
-    fetchVendors
+    fetchVendors,
+    customerProfile,
+    fetchOrCreateCustomerProfile,
+    updateCustomerProfile
   } = useAppData();
   
   const notifications = [
@@ -224,22 +227,17 @@ const CustomerDashboard = () => {
       }
     }
 
-    const savedProfile = localStorage.getItem('userProfile');
-    if (savedProfile) {
-      try {
-        const profile = JSON.parse(savedProfile);
-        setUserProfile(profile);
-      } catch (error) {
-        console.error('Error loading profile:', error);
-      }
-    }
-  }, []);
+    // Fetch or create customer profile
+    fetchOrCreateCustomerProfile();
+  }, [fetchOrCreateCustomerProfile]);
 
-  const handleProfileSave = useCallback((profileData) => {
-    setUserProfile(profileData);
-    localStorage.setItem('userProfile', JSON.stringify(profileData));
-    setShowProfileModal(false);
-  }, []);
+  const handleProfileSave = useCallback(async (profileData) => {
+    const updatedProfile = await updateCustomerProfile(profileData);
+    if (updatedProfile) {
+      setUserProfile(updatedProfile);
+      setShowProfileModal(false);
+    }
+  }, [updateCustomerProfile]);
 
   const handleVendorSelect = useCallback((vendor) => {
     setSelectedVendorId(vendor._id);
@@ -484,6 +482,20 @@ const CustomerDashboard = () => {
           <motion.div
             whileHover={{ y: -5 }}
             className="bg-gradient-to-br from-[#1A6950] to-emerald-700 rounded-[32px] p-6 text-white cursor-pointer shadow-xl hover:shadow-2xl transition-all"
+            onClick={() => {
+              // Check if user has previous orders, if yes go to orders, otherwise show favorites or general vendors
+              if ((orders || []).length > 0) {
+                navigate('/customer/orders');
+              } else {
+                // If no orders, show vendors for first-time ordering
+                const vendorSection = document.querySelector('[data-vendors-section]');
+                if (vendorSection) {
+                  vendorSection.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                  navigate('/customer/map');
+                }
+              }
+            }}
           >
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
@@ -503,7 +515,10 @@ const CustomerDashboard = () => {
           <motion.div
             whileHover={{ y: -5 }}
             className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-[32px] p-6 text-white cursor-pointer shadow-xl hover:shadow-2xl transition-all"
-            onClick={() => setShowMap(true)}
+            onClick={() => {
+              // Navigate to map page to explore nearby vendors
+              navigate('/customer/map');
+            }}
           >
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
@@ -523,7 +538,10 @@ const CustomerDashboard = () => {
           <motion.div
             whileHover={{ y: -5 }}
             className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-[32px] p-6 text-white cursor-pointer shadow-xl hover:shadow-2xl transition-all"
-            onClick={() => setShowOrderHistory(true)}
+            onClick={() => {
+              // Navigate to orders page to view order history
+              navigate('/customer/orders');
+            }}
           >
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
@@ -543,7 +561,10 @@ const CustomerDashboard = () => {
           <motion.div
             whileHover={{ y: -5 }}
             className="bg-gradient-to-br from-[#1A6950] to-emerald-700  rounded-[32px] p-6 text-white cursor-pointer shadow-xl hover:shadow-2xl transition-all"
-            onClick={() => setShowNotifications(true)}
+            onClick={() => {
+              // Navigate to dedicated notifications page
+              navigate('/customer/notifications');
+            }}
           >
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center relative">
@@ -872,7 +893,7 @@ const CustomerDashboard = () => {
       )}
 
       {/* Premium Handpicked Vendors Section */}
-      <div className="max-w-7xl mx-auto px-6 pb-20">
+      <div className="max-w-7xl mx-auto px-6 pb-20" data-vendors-section>
         <div className="flex items-baseline justify-between mb-12">
           <div>
             <h2 className="text-4xl font-heading font-black text-gray-900 uppercase tracking-tight mb-3">
@@ -1114,8 +1135,8 @@ const CustomerDashboard = () => {
           </button>
         </div>
         <button 
-          onClick={() => { setShowNotifications(!showNotifications); setShowOrderHistory(false); }}
-          className={`relative p-3 rounded-2xl transition-all ${showNotifications ? 'text-[#CDF546]' : 'text-white/40'}`}
+          onClick={() => navigate('/customer/notifications')}
+          className={`relative p-3 rounded-2xl transition-all text-white/40`}
         >
           <Bell size={24} />
           {(notifications || []).filter(n => n.unread).length > 0 && (
@@ -1126,7 +1147,7 @@ const CustomerDashboard = () => {
         </button>
         <button 
           onClick={() => {
-            if (userProfile) {
+            if (customerProfile || userProfile) {
               navigate('/customer/profile');
             } else {
               setShowProfileModal(true);
@@ -1135,7 +1156,7 @@ const CustomerDashboard = () => {
           className="relative p-3 rounded-2xl text-white/40"
         >
           <User size={24} />
-          {!userProfile && (
+          {!customerProfile && !userProfile && (
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
           )}
         </button>

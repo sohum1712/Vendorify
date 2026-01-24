@@ -29,6 +29,7 @@ import CartPage from './pages/customer/CartPage';
 import CustomerOrders from './pages/customer/CustomerOrders';
 import MapPage from './pages/customer/MapPage';
 import CustomerProfile from './pages/customer/CustomerProfile';
+import NotificationsPage from './pages/customer/NotificationsPage';
 
 import VendorLayout from './pages/vendor/VendorLayout';
 import VendorOrders from './pages/vendor/VendorOrders';
@@ -36,8 +37,6 @@ import VendorProfile from './pages/vendor/VendorProfile';
 
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminVendors from './pages/admin/AdminVendors';
-
-import ConditionalChatbot from './components/chat/ConditionalChatbot';
 
 function App() {
   return (
@@ -84,6 +83,7 @@ function App() {
               <Route path="orders" element={<CustomerOrders />} />
               <Route path="map" element={<MapPage />} />
               <Route path="profile" element={<CustomerProfile />} />
+              <Route path="notifications" element={<NotificationsPage />} />
             </Route>
 
             {/* Protected Vendor Routes */}
@@ -123,8 +123,6 @@ function App() {
             className="z-50"
             toastClassName="bg-white border border-gray-200 rounded-2xl shadow-lg"
           />
-
-          <ConditionalChatbot />
         </div>
       </AppDataProvider>
     </AuthProvider>

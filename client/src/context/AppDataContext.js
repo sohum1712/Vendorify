@@ -173,8 +173,14 @@ export const AppDataProvider = ({ children }) => {
   const fetchOrCreateCustomerProfile = useCallback(async () => {
     try {
       const token = localStorage.getItem("vendorify_token");
+      const headers = {
+        "Content-Type": "application/json",
+        "x-customer-id": customerId,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+      
       const res = await fetch(`${CONFIG.API.BASE_URL}/customers/profile`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers,
       });
 
       if (res.ok) {
@@ -186,10 +192,7 @@ export const AppDataProvider = ({ children }) => {
       if (res.status === 404) {
         const createRes = await fetch(`${CONFIG.API.BASE_URL}/customers/profile`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
+          headers,
           body: JSON.stringify({
             customerId,
             name: "Customer",
@@ -210,12 +213,15 @@ export const AppDataProvider = ({ children }) => {
   const updateCustomerProfile = useCallback(async (updates) => {
     try {
       const token = localStorage.getItem("vendorify_token");
+      const headers = {
+        "Content-Type": "application/json",
+        "x-customer-id": customerId,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+      
       const res = await fetch(`${CONFIG.API.BASE_URL}/customers/profile`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        headers,
         body: JSON.stringify(updates),
       });
 
@@ -227,7 +233,7 @@ export const AppDataProvider = ({ children }) => {
       console.error("Update profile error:", err);
       return null;
     }
-  }, []);
+  }, [customerId]);
 
   /* -------------------- API HELPERS -------------------- */
   const fetchVendors = useCallback(async () => {
