@@ -5,10 +5,13 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
+    "build": "cd ../client && npm ci && npm run build && mv build ../server/public",
     "start": "node index.js",
     "dev": "nodemon index.js",
     "init-db": "node scripts/initDB.js",
-    "verify": "node scripts/verifySetup.js"
+    "verify": "node scripts/verifySetup.js",
+    "prod": "NODE_ENV=production node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "@google/generative-ai": "0.24.1",

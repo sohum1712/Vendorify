@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 require('dotenv').config();
 
 const { CONFIG, SOCKET_EVENTS, HTTP_STATUS } = require('./config/constants');
@@ -100,9 +101,13 @@ connectDB();
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/public/vendors', publicRoutes);
-app.use('/api/customers', require('./routes/customerRoutes')); // Customer routes
-app.use('/api/test', require('./routes/testRoutes')); // Test routes
+app.use('/api/customers', require('./routes/customerRoutes'));
 app.use('/api/orders', orderRoutes);
+
+// Test routes only in development
+if (process.env.NODE_ENV === 'development') {
+  app.use('/api/test', require('./routes/testRoutes'));
+}
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -127,14 +132,23 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// Serve static files from React build (for Render single-service deployment)
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, 'public')));
+}
+
 // Root endpoint
 app.get('/', (req, res) => {
-    res.json({
-        success: true,
-        message: 'Welcome to Vendorify API',
-        version: '1.0.0',
-        documentation: '/api/health'
-    });
+    if (process.env.NODE_ENV === 'production') {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    } else {
+        res.json({
+            success: true,
+            message: 'Welcome to Vendorify API',
+            version: '1.0.0',
+            documentation: '/api/health'
+        });
+    }
 });
 
 // Socket.io connection handling
@@ -194,10 +208,15 @@ app.use((err, req, res, next) => {
 
 // Handle 404 routes
 app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        message: `Route ${req.originalUrl} not found`
-    });
+    // In production, serve React app for non-API routes
+    if (process.env.NODE_ENV === 'production' && !req.path.startsWith('/api')) {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    } else {
+        res.status(404).json({
+            success: false,
+            message: `Route ${req.originalUrl} not found`
+        });
+    }
 });
 
 // Graceful shutdown
