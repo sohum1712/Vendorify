@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
-    "build": "cd ../client && npm ci && npm run build && mv build ../server/public",
+    "build": "npm install --only=production && cd ../client && npm install && npm run build && mv build ../server/public",
     "start": "node index.js",
     "dev": "nodemon index.js",
     "init-db": "node scripts/initDB.js",
