@@ -41,31 +41,41 @@ export const shouldClearCache = () => {
  * Smart cache clear - only clears when necessary
  */
 export const smartCacheClear = () => {
-  if (shouldClearCache()) {
-    console.log('🧹 Performing smart cache clear...');
-    
-    // Clear only non-essential cache
-    const keysToKeep = [
-      'vendorify_token',
-      'vendorify_user',
-      'vendorify_session_id'
-    ];
-    
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('vendorify_') && !keysToKeep.includes(key)) {
-        keysToRemove.push(key);
+  try {
+    if (shouldClearCache()) {
+      console.log('🧹 Performing smart cache clear...');
+      
+      // Clear only non-essential cache
+      const keysToKeep = [
+        'vendorify_token',
+        'vendorify_user',
+        'vendorify_session_id'
+      ];
+      
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('vendorify_') && !keysToKeep.includes(key)) {
+          keysToRemove.push(key);
+        }
       }
+      
+      keysToRemove.forEach(key => {
+        try {
+          localStorage.removeItem(key);
+        } catch (error) {
+          console.warn(`Failed to remove cache key ${key}:`, error);
+        }
+      });
+      
+      // Update version and clear timestamp
+      localStorage.setItem(CACHE_KEYS.APP_VERSION, APP_VERSION);
+      localStorage.setItem(CACHE_KEYS.LAST_CLEAR, Date.now().toString());
+      
+      console.log(`🧹 Cleared ${keysToRemove.length} cache entries`);
     }
-    
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-    
-    // Update version and clear timestamp
-    localStorage.setItem(CACHE_KEYS.APP_VERSION, APP_VERSION);
-    localStorage.setItem(CACHE_KEYS.LAST_CLEAR, Date.now().toString());
-    
-    console.log(`🧹 Cleared ${keysToRemove.length} cache entries`);
+  } catch (error) {
+    console.warn('⚠️ Smart cache clear failed:', error);
   }
 };
 
@@ -148,14 +158,34 @@ export const cleanExpiredCache = () => {
  * Initialize cache management
  */
 export const initCacheManagement = () => {
-  // Perform smart cache clear on app start
-  smartCacheClear();
-  
-  // Clean expired cache items
-  cleanExpiredCache();
-  
-  // Set up periodic cache cleaning
-  setInterval(cleanExpiredCache, 10 * 60 * 1000); // Every 10 minutes
+  try {
+    // Perform smart cache clear on app start
+    smartCacheClear();
+    
+    // Clean expired cache items
+    cleanExpiredCache();
+    
+    // Set up periodic cache cleaning
+    setInterval(cleanExpiredCache, 10 * 60 * 1000); // Every 10 minutes
+    
+    console.log('✅ Cache management initialized successfully');
+  } catch (error) {
+    console.warn('⚠️ Cache management initialization failed:', error);
+    // Fallback: clear all vendorify cache if there's an error
+    try {
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('vendorify_')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      console.log('🧹 Performed emergency cache clear');
+    } catch (fallbackError) {
+      console.error('❌ Emergency cache clear failed:', fallbackError);
+    }
+  }
 };
 
 /**

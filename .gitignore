@@ -21,6 +21,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
+logs/*.log
 
 # Runtime data
 pids
@@ -91,3 +92,9 @@ yarn.lock
 # Uploads directory (keep structure but ignore files)
 uploads/*
 !uploads/.gitkeep
+
+# Production specific
+*.pem
+*.key
+*.crt
+ssl/

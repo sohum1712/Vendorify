@@ -18,6 +18,7 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 import Navbar from '../../components/common/Navbar';
 import { formatDistance } from '../../utils/geoUtils';
 import { toast } from 'react-toastify';
+import apiClient from '../../utils/api';
 
 // Helper functions
 const getVendorStatus = (vendor) => {
@@ -331,8 +332,6 @@ const RoamingVendorsPage = () => {
     </div>
   );
 };
-
-import apiClient from '../../utils/api';
 
 // Roaming Vendor List Component
 const RoamingVendorList = ({ radiusKm, userLocation, onVendorSelect, onViewVendor }) => {
